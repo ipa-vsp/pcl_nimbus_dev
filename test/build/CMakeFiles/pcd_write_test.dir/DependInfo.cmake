@@ -6,14 +6,14 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_CHECK_CXX
   "/home/vishnu/pcl_ws/test/src/pcd_write.cpp" "/home/vishnu/pcl_ws/test/build/CMakeFiles/pcd_write_test.dir/src/pcd_write.cpp.o"
   )
-set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_CXX_COMPILER_ID "Clang")
 
 # Preprocessor definitions for this target.
 set(CMAKE_TARGET_DEFINITIONS_CXX
   "DISABLE_LIBUSB_1_0"
   "DISABLE_PCAP"
   "DISABLE_PNG"
-  "H5_BUILT_AS_DYNAMIC_LIB"
+  "GLEW_STATIC"
   "vtkDomainsChemistry_AUTOINIT=1(vtkDomainsChemistryOpenGL2)"
   "vtkIOExport_AUTOINIT=2(vtkIOExportOpenGL2,vtkIOExportPDF)"
   "vtkRenderingContext2D_AUTOINIT=1(vtkRenderingContextOpenGL2)"

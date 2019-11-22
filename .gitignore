@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+webSocket_test/build/
+
+webSocket_test/build_cmake/
+
+test/build/
