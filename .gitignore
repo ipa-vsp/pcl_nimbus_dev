@@ -31,6 +31,9 @@
 *.out
 *.app
 
+#Point Cloud Data
+*.pcd
+
 webSocket_test/build/
 
 webSocket_test/build_cmake/
