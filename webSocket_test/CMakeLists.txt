@@ -4,7 +4,7 @@ project(webSocket_test)
 find_package(PCL 1.9 REQUIRED COMPONENTS common io)
 find_package(websocketpp REQUIRED)
 
-#find_package(jsoncpp REQUIRED)
+find_package(jsoncpp REQUIRED)
 #find_package(libjson-rpc-cpp CONFIG REQUIRED)
 
 include_directories(include
