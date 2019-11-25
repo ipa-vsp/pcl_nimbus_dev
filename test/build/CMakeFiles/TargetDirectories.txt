@@ -1,3 +1,0 @@
-/home/vishnu/pcl_ws/test/build/CMakeFiles/rebuild_cache.dir
-/home/vishnu/pcl_ws/test/build/CMakeFiles/pcd_write_test.dir
-/home/vishnu/pcl_ws/test/build/CMakeFiles/edit_cache.dir
