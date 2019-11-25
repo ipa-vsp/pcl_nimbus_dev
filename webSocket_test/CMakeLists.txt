@@ -5,10 +5,7 @@ find_package(PCL 1.9 REQUIRED COMPONENTS common io)
 find_package(websocketpp REQUIRED)
 
 find_package(jsoncpp REQUIRED)
-set(CURL_LIBRARY "-lcurl") 
-find_package(CURL REQUIRED) 
-include(FindPkgConfig)
-pkg_check_modules(curlpp REQUIRED)
+add_subdirectory(cpr)
 #find_package(libjson-rpc-cpp CONFIG REQUIRED)
 
 include_directories(include
