@@ -39,3 +39,5 @@ webSocket_test/build/
 webSocket_test/build_cmake/
 
 test/build/
+
+webSocket_test/cpr
