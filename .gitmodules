@@ -1,5 +1,2 @@
 [submodule "nimbus-python"]
 	url = https://github.com/pieye/nimbus-python.git
-[submodule "webSocket_test/cpr"]
-	path = webSocket_test/cpr
-	url = https://github.com/whoshuu/cpr.git
