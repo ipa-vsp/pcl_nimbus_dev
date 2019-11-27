@@ -1,7 +1,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h> 
+#include <string.h>
+#include <bits/stdc++.h> 
+#include <boost/algorithm/string.hpp>  
 #include <curl/curl.h>
 
 
@@ -30,7 +32,13 @@ int main(int argc, char** argv) {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 
        res = curl_easy_perform(curl);
-       std::cout << readBuffer << std::endl;
+
+       std::string input(readBuffer);
+       std::vector<std::string> _reslut;
+       boost::split(_reslut, input, boost::is_any_of(","));
+       boost::split(_reslut, _reslut[3], boost::is_any_of(":"));
+       //boost::split(_reslut, _reslut[1], boost::is_any_of(""));
+       std::cout << _reslut[1] << std::endl;
 
        if(res != CURLE_OK){
            fprintf(stderr, "curl_easy_persform() failed: %s\n", curl_easy_strerror(res));

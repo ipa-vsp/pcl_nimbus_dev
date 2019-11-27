@@ -1,21 +1,24 @@
 #ifndef WEBSOCKET_H
 #define WEBSOCKET_H
 
-#ifdef WIN32
-#else
-    #include <math.h>
-    #include <iostream>
-    #include <websocketpp/client.hpp>
-    #include <sys/socket.h>
-    #include <vector>
-    #include <algorithm>
-    #include <numeric>
-    #include <future>
-    #include <string>
-    #include <mutex>
-    #include <thread>
-    #include <curlpp/cURLpp.hpp>
-#endif
+#include <math.h>
+#include <iostream>
+#include <websocketpp/client.hpp>
+#include <sys/socket.h>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <future>
+#include <string>
+#include <mutex>
+#include <thread>
+#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <bits/stdc++.h> 
+#include <boost/algorithm/string.hpp>  
+#include <curl/curl.h>
 
 namespace nimbus {
 class WebSocketClient{
@@ -45,11 +48,12 @@ private:
     int ConfUnderExposured = 1;
     int ConfOverExposured  = 2;
     int ConfAsymmetric     = 3;
+     CURL *curl;
 public:
-    WebSocketClient(std::string _addr, bool continuousTrig = false, 
-                    double port = 8080, double jsonPort = 8383, 
-                    int rcvTimeout = 3, int pingTimeout = 3, 
-                    int reconnectIntents = 3, double imgBufSize =10);
+    WebSocketClient(unsigned char * _addr, bool continuousTrig, 
+                    double port, double jsonPort, 
+                    int rcvTimeout, int pingTimeout, 
+                    int reconnectIntents, double imgBufSize);
     ~WebSocketClient();
     /** ToDo
      *Need to check the return data type
@@ -64,10 +68,10 @@ public:
     void getUnitVectorY();
     void getUnitVectorZ();
     
-    template<typename C, typename P, typename A, typename T>
-    T _getJsonParameter(C componet, P paramID, A args);
+    std::string _getJsonParameter(const char * data);
+    static size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
 
-    std::string _address, _streamURL;
+    unsigned char * _address, _streamURL;
     double _streamPort, _jsonPort, _UR;
     int _rcvTimeout, _pingTimeout, _reconnectIntents, _imgBufSize;
     bool _listenStarted, _listenEnded, _connected, _disconnectMe;

@@ -5,15 +5,15 @@ project(webSocket_test)
 find_package(PCL 1.9 REQUIRED COMPONENTS common io)
 find_package(websocketpp REQUIRED)
 
-find_package(jsoncpp REQUIRED)
+#find_package(jsoncpp REQUIRED)
 find_package(CURL REQUIRED)
-find_package(nlohmann_json 3.7.3 REQUIRED)
+#find_package(nlohmann_json 3.7.3 REQUIRED)
 #add_subdirectory(cpr)
-include_directories(${CPR_INCLUDE_DIRS})
-find_package(libjson-rpc-cpp REQUIRED)
-find_package(jsoncpp REQUIRED)
+#include_directories(${CPR_INCLUDE_DIRS})
+#find_package(libjson-rpc-cpp REQUIRED)
+#find_package(jsoncpp REQUIRED)
 
-include_directories(include
+include_directories(includes
                     ${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -23,4 +23,10 @@ add_definitions(${PCL_DEFINITIONS})
 
 
 add_executable(${PROJECT_NAME} "src/main.cpp")
-target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CPR_LIBRARIES} ${CURL_LIBRARIES} ${LIBJSON_RPC_CPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CURL_LIBRARIES})
+
+add_library(WebSocketClient "src/websocket.cpp")
+target_link_libraries(WebSocketClient ${PCL_LIBRARIES} ${CURL_LIBRARIES})
+
+add_executable(testweb "src/test.cpp")
+target_link_libraries(testweb WebSocketClient)
