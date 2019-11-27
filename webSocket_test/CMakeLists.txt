@@ -7,6 +7,7 @@ find_package(websocketpp REQUIRED)
 
 find_package(jsoncpp REQUIRED)
 find_package(CURL REQUIRED)
+find_package(nlohmann_json 3.7.3 REQUIRED)
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 #find_package(libjson-rpc-cpp CONFIG REQUIRED)
@@ -21,4 +22,4 @@ add_definitions(${PCL_DEFINITIONS})
 
 
 add_executable(${PROJECT_NAME} "src/main.cpp")
-target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CPR_LIBRARIES} ${CURL_LIBRARIES} ${CURLPP_LDFLAGS})
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CPR_LIBRARIES} ${CURL_LIBRARIES})
