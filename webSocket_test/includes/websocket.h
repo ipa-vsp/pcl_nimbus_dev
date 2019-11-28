@@ -17,11 +17,18 @@
 #include <stdio.h>
 #include <string>
 #include <bits/stdc++.h> 
-#include <boost/algorithm/string.hpp>  
+#include <boost/algorithm/string.hpp>
+//#include <boost/python/detail/wrap_python.hpp>  
+//#include <boost/python/numpy.hpp>  
 #include <curl/curl.h>
-
+#include <jsoncpp/json/json.h>
 #include "base64.h"
 
+#include <locale>
+#include <codecvt>
+
+//namespace p = boost::python;
+//namespace np = boost::python::numpy;
 namespace nimbus {
 class WebSocketClient{
     std::mutex m_mutex;
@@ -66,13 +73,18 @@ public:
     void connect();
     void disconnect();
     void getImage();
-    void getUnitVectorX();
+
+    template<typename D>
+    D getUnitVectorX();
     void getUnitVectorY();
     void getUnitVectorZ();
-    double getSpreadFactorXYZ();
     
-    std::string _getJsonParameter(const char * data);
-    static size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);
+    template<typename D>
+    D getSpreadFactorXYZ();
+    
+    template<typename T, typename D>
+    T _getJsonParameter(D data);
+    static size_t WriteCallback(const char* in, std::size_t size, std::size_t num, std::string* out);
 
     unsigned char * _address, _streamURL;
     double _streamPort, _jsonPort, _UR;
