@@ -15,10 +15,12 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <bits/stdc++.h> 
 #include <boost/algorithm/string.hpp>  
 #include <curl/curl.h>
+
+#include "base64.h"
 
 namespace nimbus {
 class WebSocketClient{
@@ -67,6 +69,7 @@ public:
     void getUnitVectorX();
     void getUnitVectorY();
     void getUnitVectorZ();
+    double getSpreadFactorXYZ();
     
     std::string _getJsonParameter(const char * data);
     static size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp);

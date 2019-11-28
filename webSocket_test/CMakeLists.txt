@@ -27,6 +27,10 @@ target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CURL_LIBRARIES})
 
 add_library(WebSocketClient "src/websocket.cpp")
 target_link_libraries(WebSocketClient ${PCL_LIBRARIES} ${CURL_LIBRARIES})
+add_library(base64 "src/base64.cpp")
+target_link_libraries(base64)
 
 add_executable(testweb "src/test.cpp")
-target_link_libraries(testweb WebSocketClient)
+target_link_libraries(testweb WebSocketClient base64)
+add_executable(testBase64 "src/base64Test.cpp")
+target_link_libraries(testBase64 base64)

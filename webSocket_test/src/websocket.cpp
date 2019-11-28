@@ -34,9 +34,29 @@ namespace nimbus{
         //acquired thread
         //this->connect();
         // ..
+        //double spread = this->getSpreadFactorXYZ();
+        //std::cout << (double)spread << std::endl;
+        this->getUnitVectorX();
     }
 
     WebSocketClient::~WebSocketClient(){}
+
+    void WebSocketClient::getUnitVectorX(){
+        std::string result_r = this->_getJsonParameter("{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"nimbusRaw\", \"ID\": 4, \"param\": []} }");
+        //ToDo: Check for success
+        //result_r = result_r.erase(std::remove(result_r.begin(), result_r.end(), "\\"), result_r.end());
+        std::cout << result_r << std::endl;
+        std::string decoded = base64_decode(result_r);
+        std::cout << "decoded: " << std::endl << decoded << std::endl;
+    }
+
+    double WebSocketClient::getSpreadFactorXYZ()
+    {
+        std::string result_r = this->_getJsonParameter("{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"nimbusRaw\", \"ID\": 7, \"param\": []} }");
+        //ToDo: Check for success
+        double sp = std::stod(result_r);
+        return sp;
+    }
 
     size_t WebSocketClient::WriteCallback(char *contents, size_t size, size_t nmemb, void *userp)
     {
@@ -51,7 +71,7 @@ namespace nimbus{
         CURLcode res;
         std::string readBuffer;
         unsigned char * url = this->_address;
-        std::cout << url << std::endl;
+        //std::cout << url << std::endl;
 
         if(this->curl)
         {
@@ -75,12 +95,11 @@ namespace nimbus{
         curl_global_cleanup();
 
         std::string input(readBuffer);
+        //std::cout << "Result from the server: " << readBuffer << std::endl;
         std::vector<std::string> _reslut;
         boost::split(_reslut, input, boost::is_any_of(","));
         boost::split(_reslut, _reslut[3], boost::is_any_of(":"));
-            //boost::split(_reslut, _reslut[1], boost::is_any_of(""));
-        //std::cout << _reslut[1] << std::endl;
-        //T final_r = _reslut[1];
+        //ToDo: Currently only concentrated on the result --> change to success as well. 
         return _reslut[1];
     }
 
