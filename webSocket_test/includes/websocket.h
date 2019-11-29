@@ -2,20 +2,16 @@
 #define WEBSOCKET_H
 
 #include <math.h>
-#include <iostream>
 #include <websocketpp/client.hpp>
 #include <sys/socket.h>
 #include <vector>
 #include <algorithm>
 #include <numeric>
 #include <future>
-#include <string>
 #include <mutex>
 #include <thread>
-#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
 #include <bits/stdc++.h> 
 #include <boost/algorithm/string.hpp>
 //#include <boost/python/detail/wrap_python.hpp>  
@@ -24,6 +20,11 @@
 #include <jsoncpp/json/json.h>
 #include "base64.h"
 
+#include<iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <cstdint>
 #include <locale>
 #include <codecvt>
 
@@ -57,7 +58,10 @@ private:
     int ConfUnderExposured = 1;
     int ConfOverExposured  = 2;
     int ConfAsymmetric     = 3;
-     CURL *curl;
+
+    std::vector<std::vector<double> > _uX;
+    std::vector<std::vector<double> > _uY;
+    std::vector<std::vector<double> > _uZ;
 public:
     WebSocketClient(unsigned char * _addr, bool continuousTrig, 
                     double port, double jsonPort, 
@@ -76,8 +80,10 @@ public:
 
     template<typename D>
     D getUnitVectorX();
-    void getUnitVectorY();
-    void getUnitVectorZ();
+    template<typename D>
+    D getUnitVectorY();
+    template<typename D>
+    D getUnitVectorZ();
     
     template<typename D>
     D getSpreadFactorXYZ();

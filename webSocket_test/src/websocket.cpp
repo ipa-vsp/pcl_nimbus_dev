@@ -29,14 +29,21 @@ namespace nimbus{
         double fmod = 11.78e6;
         this->_UR = c_/(2 * fmod);
 
-        this->curl = curl_easy_init();
-
         //acquired thread
         //this->connect();
         // ..
-        //std::string spreadString = this->getSpreadFactorXYZ<std::string>();
-        //double spread = std::stof(spreadString);
-        this->getUnitVectorX<std::string>();
+        double spread = this->getSpreadFactorXYZ<double>();
+        std::vector<std::vector<int16_t> > unitX = this->getUnitVectorX<std::vector<std::vector<int16_t> >>();
+        std::vector<std::vector<int16_t> > unitY = this->getUnitVectorY<std::vector<std::vector<int16_t> >>();
+        std::vector<std::vector<int16_t> > unitZ = this->getUnitVectorZ<std::vector<std::vector<int16_t> >>();
+        
+        for (size_t j = 0; j < unitX[0].size() ; j++)
+            for(size_t i = 0; i < unitX.size(); i++)
+            {
+                int16_t temp = unitX[i][j];
+                this->_uX[i][j] = (double)temp / spread;
+            }
+        
     }
 
     WebSocketClient::~WebSocketClient(){}
@@ -50,31 +57,86 @@ namespace nimbus{
         {
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
-            //int a = std::stoi(decode);
-            std::cout << "decoded: " << std::endl << decode << std::endl;
-            // the UTF-8 / UTF-16 standard conversion facet
-            std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> utf16conv;
-            std::u16string utf16 = utf16conv.from_bytes(decode);
-            std::cout << "UTF16 conversion produced " << utf16.size() << " code units:\n";
-            for (char16_t c : utf16)
-                std::cout << std::hex << std::showbase << c << '\n';
-           
+            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
+            int16_t* my_vec_x = (int16_t*)decode.c_str();
+            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
+            int counter = 0;
+            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
+            {
+                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Row
+                {
+                    my_2d_vec[i][j] = my_vec_x[counter];
+                    counter ++;
+                }
+            }
+            resultValue =  my_2d_vec;
         }
-        //result_r = result_r.erase(std::remove(result_r.begin(), result_r.end(), "\\"), result_r.end());
-        //std::cout << result_r << std::endl;
-        //std::string decoded = base64_decode(result_r);
-        //std::cout << "decoded: " << std::endl << decoded << std::endl;
+        return (resultValue);
+    }
+    template<typename D>
+    D WebSocketClient::getUnitVectorY(){
+        D resultValue;
+        Json::Value result_r = this->_getJsonParameter<Json::Value>("{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"nimbusRaw\", \"ID\": 5, \"param\": []} }");
+        std::string rv(result_r["success"].asString());
+        if(rv == "0")
+        {
+            std::string data(result_r["result"].asString());
+            std::string decode = base64_decode(data);
+            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
+            int16_t* my_vec_y = (int16_t*)decode.c_str();
+            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
+            int counter = 0;
+            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
+            {
+                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Ros
+                {
+                    my_2d_vec[i][j] = my_vec_y[counter];
+                    counter ++;
+                }
+            }
+            resultValue =  my_2d_vec;
+        }
+        return (resultValue);
+    }
+    template<typename D>
+    D WebSocketClient::getUnitVectorZ(){
+        D resultValue;
+        Json::Value result_r = this->_getJsonParameter<Json::Value>("{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"nimbusRaw\", \"ID\": 6, \"param\": []} }");
+        std::string rv(result_r["success"].asString());
+        if(rv == "0")
+        {
+            std::string data(result_r["result"].asString());
+            std::string decode = base64_decode(data);
+            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
+            int16_t* my_vec_z = (int16_t*)decode.c_str();
+            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
+            int counter = 0;
+            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
+            {
+                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Ros
+                {
+                    my_2d_vec[i][j] = my_vec_z[counter];
+                    counter ++;
+                }
+            }
+            resultValue =  my_2d_vec;
+        }
+        return (resultValue);
     }
 
     template<typename D>
     D WebSocketClient::getSpreadFactorXYZ()
     {
-        D returnDouble = NULL;
+        D returnDouble;
         Json::Value result_r = this->_getJsonParameter<Json::Value>("{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"nimbusRaw\", \"ID\": 7, \"param\": []} }");
         std::string rv(result_r["success"].asString());
         if(rv == "0"){
             std::string data(result_r["result"].asString());
-            returnDouble = data;
+            double dResult = std::stod(data);
+            returnDouble = dResult;
         }
         return (returnDouble);
     }
@@ -89,7 +151,7 @@ namespace nimbus{
     template<typename T, typename D>
     T WebSocketClient::_getJsonParameter(D data)
     {
-        //CURL *curl = curl_easy_init();
+        CURL *curl = curl_easy_init();
         struct curl_slist *headers = NULL;
         CURLcode res;
         std::string readBuffer;
@@ -99,13 +161,12 @@ namespace nimbus{
         const std::string result_string;
         T resultJson;
 
-        if(this->curl)
+        if(curl)
         {
             /** ToDo:
              * @brief Use the json paeser construct that payload and use this as string!!
              */
-            const char *payload = data;                           
-            //"{\"jsonrpc\": \"2.0\", \"id\":\"0\", \"method\": \"getParameter\", \"params\": {\"component\": \"%s\", \"ID\": %d, \"param\": []} }", componet, paramID;
+            const char *payload = data; 
             headers = curl_slist_append(headers, "content-type: application/json;");
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -128,13 +189,8 @@ namespace nimbus{
             Json::Reader jsonReader;
             if(jsonReader.parse(*httpData.get(), jsonData))
             {
-                /*std::cout << "Successfully parsed JSON data" << std::endl;
-                std::cout << "\nJSON data received:" << std::endl;
-                std::cout << jsonData.toStyledString() << std::endl;*/
-
                 jsonReader.parse(jsonData["result"].toStyledString(), jsonData);
                 const std::string dataString(jsonData["result"].asString());
-                std::cout << "Data------:  " << dataString <<std::endl;
                 resultJson = jsonData;
             }else
             {
