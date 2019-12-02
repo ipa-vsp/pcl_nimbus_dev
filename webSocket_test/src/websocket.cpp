@@ -1,5 +1,6 @@
 #include "websocket.h"
 
+
 namespace nimbus{
     WebSocketClient::WebSocketClient(unsigned char * addr, bool continuousTrig = false, 
                     double port = 8080, double jsonPort = 8383, 
@@ -23,30 +24,76 @@ namespace nimbus{
         this->_disconnectMe = false;
 
         // asyncio
-        // image Queue
 
         double c_ = 299792458;
         double fmod = 11.78e6;
         this->_UR = c_/(2 * fmod);
 
         //acquired thread
-        //this->connect();
+        this->connect();
         // ..
-        double spread = this->getSpreadFactorXYZ<double>();
+        this->spread = this->getSpreadFactorXYZ<float_t>();
         std::vector<std::vector<int16_t> > unitX = this->getUnitVectorX<std::vector<std::vector<int16_t> >>();
         std::vector<std::vector<int16_t> > unitY = this->getUnitVectorY<std::vector<std::vector<int16_t> >>();
         std::vector<std::vector<int16_t> > unitZ = this->getUnitVectorZ<std::vector<std::vector<int16_t> >>();
-        
-        for (size_t j = 0; j < unitX[0].size() ; j++)
-            for(size_t i = 0; i < unitX.size(); i++)
-            {
-                int16_t temp = unitX[i][j];
-                this->_uX[i][j] = (double)temp / spread;
-            }
+
+        normalize(unitX, &this->_uX);
+        normalize(unitY, &this->_uY);
+        normalize(unitZ, &this->_uZ);
         
     }
 
     WebSocketClient::~WebSocketClient(){}
+
+    int WebSocketClient::listenForever() 
+    {
+        // ToDo initialize the  imageQueue
+        this->_listenStarted = true;
+        int sleepTime = 0.1;
+        int intent = 0;
+
+        while(intent < this->_reconnectIntents)
+        {
+            this->_connected = false;
+            if(this->_disconnectMe == true) break;
+        }
+
+    }
+
+    
+    void WebSocketClient::listenerThread()
+    {
+        std::future<int> task = std::async(std::launch::async, &WebSocketClient::listenForever, this);
+        // ToDo: run_until_complete 
+    }
+
+    void WebSocketClient::connect()
+    {
+        try
+        {
+            this->_listenThread = std::thread(&WebSocketClient::listenerThread, this);
+            this->_listenThread.join();
+        }
+        catch(const std::runtime_error &e)
+        {
+            std::cout << e.what() << std::endl;
+        }
+        
+    }
+
+    void WebSocketClient::normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u){
+         for (size_t j = 0; j < unit[0].size() ; j++)
+        {
+            std::vector<float_t> tempVector;
+            for(size_t i = 0; i < unit.size(); i++)
+            {
+                int16_t temp = unit[i][j];
+                float_t temp2 = temp / this->spread;
+                tempVector.push_back(temp2);
+            }
+            _u->push_back(tempVector);
+        }
+     }
 
     template<typename D>
     D WebSocketClient::getUnitVectorX(){

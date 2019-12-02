@@ -10,6 +10,7 @@
 #include <future>
 #include <mutex>
 #include <thread>
+#include <queue>
 #include <stdlib.h>
 #include <stdio.h>
 #include <bits/stdc++.h> 
@@ -27,6 +28,7 @@
 #include <cstdint>
 #include <locale>
 #include <codecvt>
+#include <vector>
 
 //namespace p = boost::python;
 //namespace np = boost::python::numpy;
@@ -59,20 +61,29 @@ private:
     int ConfOverExposured  = 2;
     int ConfAsymmetric     = 3;
 
-    std::vector<std::vector<double> > _uX;
-    std::vector<std::vector<double> > _uY;
-    std::vector<std::vector<double> > _uZ;
+    unsigned char * _address, _streamURL;
+    double _streamPort, _jsonPort, _UR;
+    int _rcvTimeout, _pingTimeout, _reconnectIntents, _imgBufSize;
+    bool _listenStarted;
+    bool _listenEnded, _connected, _disconnectMe;
+    std::thread _threadUpdate;
+    std::queue<std::string> _imageQueue;
+
+    float_t spread;
+    std::vector<std::vector<float_t> > _uX;
+    std::vector<std::vector<float_t> > _uY;
+    std::vector<std::vector<float_t> > _uZ;
+
+    std::thread _listenThread;
+
 public:
     WebSocketClient(unsigned char * _addr, bool continuousTrig, 
                     double port, double jsonPort, 
                     int rcvTimeout, int pingTimeout, 
                     int reconnectIntents, double imgBufSize);
     ~WebSocketClient();
-    /** ToDo
-     *Need to check the return data type
-     * Asynchronous function for streaming the camera data
-     * JSON RPC to control the exposer time is not used*/
-    void listenForever();
+    int listenForever();
+    void listenerThread();
     void _pollQueue();
     void connect();
     void disconnect();
@@ -87,17 +98,12 @@ public:
     
     template<typename D>
     D getSpreadFactorXYZ();
+
+    void normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u);
     
     template<typename T, typename D>
     T _getJsonParameter(D data);
     static size_t WriteCallback(const char* in, std::size_t size, std::size_t num, std::string* out);
-
-    unsigned char * _address, _streamURL;
-    double _streamPort, _jsonPort, _UR;
-    int _rcvTimeout, _pingTimeout, _reconnectIntents, _imgBufSize;
-    bool _listenStarted, _listenEnded, _connected, _disconnectMe;
-    std::thread _threadUpdate;
-    //_imageQueue
 };
 }
 
