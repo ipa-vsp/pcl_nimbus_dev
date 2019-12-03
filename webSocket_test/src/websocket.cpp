@@ -1,5 +1,13 @@
 #include "websocket.h"
 
+#include <websocketpp/common/thread.hpp>
+#include <websocketpp/common/memory.hpp>
+
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <string>
+#include <sstream>
 
 namespace nimbus{
     WebSocketClient::WebSocketClient(unsigned char * addr, bool continuousTrig = false, 
@@ -29,6 +37,14 @@ namespace nimbus{
         double fmod = 11.78e6;
         this->_UR = c_/(2 * fmod);
 
+        //Intialized the WebSocket Client;
+        /*_c.set_access_channels(websocketpp::log::alevel::all);
+        _c.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        //init ASCIO
+        _c.init_asio();
+        _c.start_perpetual();
+        this->m_thread = websocketpp::lib::make_shared<websocketpp::lib::thread>(&client::run, &this->_c);*/
+
         //acquired thread
         this->connect();
         // ..
@@ -43,42 +59,56 @@ namespace nimbus{
         
     }
 
-    WebSocketClient::~WebSocketClient(){}
-
-    int WebSocketClient::listenForever() 
+    WebSocketClient::~WebSocketClient()
     {
-        // ToDo initialize the  imageQueue
-        this->_listenStarted = true;
-        int sleepTime = 0.1;
-        int intent = 0;
+        this->_listenThread.join();
+    }
 
-        while(intent < this->_reconnectIntents)
-        {
-            this->_connected = false;
-            if(this->_disconnectMe == true) break;
+    /*void WebSocketClient::on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) 
+    {
+        /*std::cout << "on_message called with hdl: " << hdl.lock().get()
+              << " and message: " << msg->get_payload()
+              << std::endl;*/
+        /*std::string a = msg->get_payload();
+        std::cout << a << std::endl;
+        websocketpp::lib::error_code ec;
+
+        c->send(hdl, msg->get_payload(), msg->get_opcode(), ec);
+        if (ec) {
+            std::cout << "Echo failed because: " << ec.message() << std::endl;
         }
 
-    }
+    }*/
 
     
     void WebSocketClient::listenerThread()
     {
-        std::future<int> task = std::async(std::launch::async, &WebSocketClient::listenForever, this);
-        // ToDo: run_until_complete 
+        //std::future<int> task = std::async(std::launch::async, &WebSocketClient::listenForever, this);
+        // ToDo: run_until_complete
+        while (true)
+            //this->_imageQueue.push(metadata->_queue);
+             std::cout << metadata.get()->_queue << std::endl;
     }
 
     void WebSocketClient::connect()
     {
+        int id = endpoint.connect("ws://192.168.0.69:8080/stream");
+        metadata = endpoint.get_metadata(id);
+        if (metadata) {
+            std::cout << metadata.get() << std::endl;
+        } else {
+            std::cout << "> Unknown connection id " << id << std::endl;
+        }
+
         try
         {
-            this->_listenThread = std::thread(&WebSocketClient::listenerThread, this);
-            this->_listenThread.join();
+            this->_listenThread = std::thread(&WebSocketClient::listenerThread,  this);
         }
         catch(const std::runtime_error &e)
         {
             std::cout << e.what() << std::endl;
-        }
-        
+        }  
+
     }
 
     void WebSocketClient::normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u){
@@ -254,6 +284,4 @@ namespace nimbus{
         curl_global_cleanup();
         return (resultJson);
     }
-
-
 }

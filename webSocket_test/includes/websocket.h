@@ -2,9 +2,7 @@
 #define WEBSOCKET_H
 
 #include <math.h>
-#include <websocketpp/client.hpp>
 #include <sys/socket.h>
-#include <vector>
 #include <algorithm>
 #include <numeric>
 #include <future>
@@ -30,12 +28,16 @@
 #include <codecvt>
 #include <vector>
 
+#include "connectWS.h"
+
+
 //namespace p = boost::python;
 //namespace np = boost::python::numpy;
 namespace nimbus {
 class WebSocketClient{
     std::mutex m_mutex;
 private:
+    
     int NimbusImageRaw          = 1;
     int NimbusImageDist         = 2;
     int NimbusImageAmpl         = 4;
@@ -67,7 +69,6 @@ private:
     bool _listenStarted;
     bool _listenEnded, _connected, _disconnectMe;
     std::thread _threadUpdate;
-    std::queue<std::string> _imageQueue;
 
     float_t spread;
     std::vector<std::vector<float_t> > _uX;
@@ -75,6 +76,8 @@ private:
     std::vector<std::vector<float_t> > _uZ;
 
     std::thread _listenThread;
+    websocket_endpoint endpoint;
+    connection_metadata::ptr metadata;
 
 public:
     WebSocketClient(unsigned char * _addr, bool continuousTrig, 
@@ -82,7 +85,7 @@ public:
                     int rcvTimeout, int pingTimeout, 
                     int reconnectIntents, double imgBufSize);
     ~WebSocketClient();
-    int listenForever();
+    //void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg);
     void listenerThread();
     void _pollQueue();
     void connect();
@@ -104,6 +107,8 @@ public:
     template<typename T, typename D>
     T _getJsonParameter(D data);
     static size_t WriteCallback(const char* in, std::size_t size, std::size_t num, std::string* out);
+
+     std::queue<std::string> _imageQueue;
 };
 }
 

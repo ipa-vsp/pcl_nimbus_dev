@@ -15,7 +15,7 @@ endif()
 
 find_package(PCL 1.9 REQUIRED COMPONENTS common io)
 find_package(websocketpp REQUIRED)
-
+find_package(Boost COMPONENTS system thread coroutine context REQUIRED)
 #find_package(jsoncpp REQUIRED)
 find_package(CURL REQUIRED)
 #find_package(nlohmann_json 3.7.3 REQUIRED)
@@ -38,7 +38,7 @@ add_executable(${PROJECT_NAME} "src/main.cpp")
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${CURL_LIBRARIES} jsoncpp)
 
 add_library(WebSocketClient "src/websocket.cpp")
-target_link_libraries(WebSocketClient ${PCL_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(WebSocketClient ${PCL_LIBRARIES} ${CURL_LIBRARIES} ${BOOST_LIBRARIES} ${WEBSOCKETPP_LIBRARIES})
 add_library(base64 "src/base64.cpp")
 target_link_libraries(base64)
 
@@ -46,3 +46,6 @@ add_executable(testweb "src/test.cpp")
 target_link_libraries(testweb WebSocketClient base64 jsoncpp) #${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 add_executable(testBase64 "src/base64Test.cpp")
 target_link_libraries(testBase64 base64)
+
+add_executable(websocketClTest "src/websockTest.cpp")
+target_link_libraries(websocketClTest base64 ${BOOST_LIBRARIES} ${WEBSOCKETPP_LIBRARIES})
