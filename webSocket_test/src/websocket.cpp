@@ -28,35 +28,24 @@ namespace nimbus{
         this->_listenStarted = false;
         this->_listenEnded = false;
         this->_connected = false;
-        // thread
         this->_disconnectMe = false;
-
-        // asyncio
 
         double c_ = 299792458;
         double fmod = 11.78e6;
         this->_UR = c_/(2 * fmod);
 
-        //Intialized the WebSocket Client;
-        /*_c.set_access_channels(websocketpp::log::alevel::all);
-        _c.clear_access_channels(websocketpp::log::alevel::frame_payload);
-        //init ASCIO
-        _c.init_asio();
-        _c.start_perpetual();
-        this->m_thread = websocketpp::lib::make_shared<websocketpp::lib::thread>(&client::run, &this->_c);*/
-
-        //acquired thread
-        this->connect();
         // ..
         this->spread = this->getSpreadFactorXYZ<float_t>();
-        std::vector<std::vector<int16_t> > unitX = this->getUnitVectorX<std::vector<std::vector<int16_t> >>();
-        std::vector<std::vector<int16_t> > unitY = this->getUnitVectorY<std::vector<std::vector<int16_t> >>();
-        std::vector<std::vector<int16_t> > unitZ = this->getUnitVectorZ<std::vector<std::vector<int16_t> >>();
-
-        normalize(unitX, &this->_uX);
-        normalize(unitY, &this->_uY);
-        normalize(unitZ, &this->_uZ);
+        int16_t * unitX = this->getUnitVectorX<int16_t *>();
+        int16_t * unitY = this->getUnitVectorY<int16_t *>();
+        int16_t * unitZ = this->getUnitVectorY<int16_t *>();
         
+        // ToDo: Remove the tidious for loop!!
+        for(size_t i = 0; i < 286*352; i++) this->_uX[i] = unitX[i] / spread;
+        for(size_t i = 0; i < 286*352; i++) this->_uY[i] = unitY[i] / spread;
+        for(size_t i = 0; i < 286*352; i++) this->_uZ[i] = unitZ[i] / spread;
+
+        this->connect();  
     }
 
     WebSocketClient::~WebSocketClient()
@@ -64,30 +53,31 @@ namespace nimbus{
         this->_listenThread.join();
     }
 
-    /*void WebSocketClient::on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) 
-    {
-        /*std::cout << "on_message called with hdl: " << hdl.lock().get()
-              << " and message: " << msg->get_payload()
-              << std::endl;*/
-        /*std::string a = msg->get_payload();
-        std::cout << a << std::endl;
-        websocketpp::lib::error_code ec;
-
-        c->send(hdl, msg->get_payload(), msg->get_opcode(), ec);
-        if (ec) {
-            std::cout << "Echo failed because: " << ec.message() << std::endl;
-        }
-
-    }*/
-
-    
     void WebSocketClient::listenerThread()
     {
-        //std::future<int> task = std::async(std::launch::async, &WebSocketClient::listenForever, this);
-        // ToDo: run_until_complete
-        while (true)
-            //this->_imageQueue.push(metadata->_queue);
-             std::cout << metadata.get()->_queue << std::endl;
+        while(!this->_imageQueue.empty())
+            this->_imageQueue.pop();
+        int intent = 0;
+        while (intent < this->_reconnectIntents)
+        {
+            std::string status = metadata.get()->get_status();
+            if (status == "Open")
+            {
+                if(this->_imageQueue.size() <= this->_imgBufSize){
+                    this->_imageQueue.push(metadata.get()->_queue);
+                }else{
+                    this->_imageQueue.pop();
+                }
+            }else if(status == "Connecting")
+            {
+                std::cout << "Connecting to the Web Socket Please wait:...!" << std::endl;
+            }else if(status == "Failed"){
+                std::cout << "Failed to connect .. Trying to reconnect again" << std::endl;
+                intent +=1;
+                //ToDo without exiting this thread this->connect();
+            }
+            
+        }
     }
 
     void WebSocketClient::connect()
@@ -136,7 +126,7 @@ namespace nimbus{
             std::string decode = base64_decode(data);
             //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_x = (int16_t*)decode.c_str();
-            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
             //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
             int counter = 0;
             for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
@@ -146,8 +136,8 @@ namespace nimbus{
                     my_2d_vec[i][j] = my_vec_x[counter];
                     counter ++;
                 }
-            }
-            resultValue =  my_2d_vec;
+            }*/
+            resultValue =  my_vec_x;
         }
         return (resultValue);
     }
@@ -162,7 +152,7 @@ namespace nimbus{
             std::string decode = base64_decode(data);
             //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_y = (int16_t*)decode.c_str();
-            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
             //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
             int counter = 0;
             for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
@@ -172,8 +162,8 @@ namespace nimbus{
                     my_2d_vec[i][j] = my_vec_y[counter];
                     counter ++;
                 }
-            }
-            resultValue =  my_2d_vec;
+            }*/
+            resultValue =  my_vec_y;
         }
         return (resultValue);
     }
@@ -188,7 +178,7 @@ namespace nimbus{
             std::string decode = base64_decode(data);
             //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_z = (int16_t*)decode.c_str();
-            std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
+            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
             //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
             int counter = 0;
             for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
@@ -198,8 +188,8 @@ namespace nimbus{
                     my_2d_vec[i][j] = my_vec_z[counter];
                     counter ++;
                 }
-            }
-            resultValue =  my_2d_vec;
+            }*/
+            resultValue =  my_vec_z;
         }
         return (resultValue);
     }

@@ -71,9 +71,9 @@ private:
     std::thread _threadUpdate;
 
     float_t spread;
-    std::vector<std::vector<float_t> > _uX;
-    std::vector<std::vector<float_t> > _uY;
-    std::vector<std::vector<float_t> > _uZ;
+    float * _uX = new float[286*352];
+    float * _uY = new float[286*352];
+    float * _uZ = new float[286*352];
 
     std::thread _listenThread;
     websocket_endpoint endpoint;

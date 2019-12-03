@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv)
 {
-    nimbus::WebSocketClient a((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 1, 1, 1, 1);  
+    nimbus::WebSocketClient a((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);  
     std::string uri = "ws://192.168.0.69:8080/stream";
     /*websocket_endpoint endpoint;
     connection_metadata::ptr metadata;
