@@ -53,6 +53,18 @@ namespace nimbus{
         this->_listenThread.join();
     }
 
+    /** ToDo:
+     * @brief This conversion is not followed by the books as in its counterpart in python
+     *  version, headerSize = struct.unpack("<ff", buf[:8])
+     * here we concentraten only on the first two element of the array and
+     * it is considered as the version and header size.
+     * @todo change this and follow the IEEE 754 -1985 industry standard.
+    */
+    float * WebSocketClient::unpack(std::string buf){
+        float_t * b = (float_t *) buf.c_str();
+        return (b);
+    }
+
     void WebSocketClient::listenerThread()
     {
         while(!this->_imageQueue.empty())
@@ -65,6 +77,10 @@ namespace nimbus{
             {
                 if(this->_imageQueue.size() <= this->_imgBufSize){
                     this->_imageQueue.push(metadata.get()->_queue);
+                    std::string current = this->_imageQueue.front();
+                    current = std::string(current.begin(), current.begin()+8);
+                    float * value = this->unpack(current);
+                    std::cout << value[1] << std::endl;
                 }else{
                     this->_imageQueue.pop();
                 }

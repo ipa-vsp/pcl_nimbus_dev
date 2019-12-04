@@ -102,6 +102,8 @@ public:
     template<typename D>
     D getSpreadFactorXYZ();
 
+    float * unpack(std::string buf);
+
     void normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u);
     
     template<typename T, typename D>
