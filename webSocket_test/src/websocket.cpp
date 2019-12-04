@@ -77,10 +77,10 @@ namespace nimbus{
             {
                 if(this->_imageQueue.size() <= this->_imgBufSize){
                     this->_imageQueue.push(metadata.get()->_queue);
-                    std::string current = this->_imageQueue.front();
-                    current = std::string(current.begin(), current.begin()+8);
-                    float * value = this->unpack(current);
-                    std::cout << value[1] << std::endl;
+                    // std::string current = this->_imageQueue.front();
+                    // current = std::string(current.begin(), current.begin()+8);
+                    // float * value = this->unpack(current);
+                    // std::cout << value[1] << std::endl;
                 }else{
                     this->_imageQueue.pop();
                 }
@@ -117,19 +117,6 @@ namespace nimbus{
 
     }
 
-    void WebSocketClient::normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u){
-         for (size_t j = 0; j < unit[0].size() ; j++)
-        {
-            std::vector<float_t> tempVector;
-            for(size_t i = 0; i < unit.size(); i++)
-            {
-                int16_t temp = unit[i][j];
-                float_t temp2 = temp / this->spread;
-                tempVector.push_back(temp2);
-            }
-            _u->push_back(tempVector);
-        }
-     }
 
     template<typename D>
     D WebSocketClient::getUnitVectorX(){
@@ -140,19 +127,7 @@ namespace nimbus{
         {
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
-            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_x = (int16_t*)decode.c_str();
-            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
-            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
-            int counter = 0;
-            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
-            {
-                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Row
-                {
-                    my_2d_vec[i][j] = my_vec_x[counter];
-                    counter ++;
-                }
-            }*/
             resultValue =  my_vec_x;
         }
         return (resultValue);
@@ -166,19 +141,7 @@ namespace nimbus{
         {
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
-            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_y = (int16_t*)decode.c_str();
-            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
-            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
-            int counter = 0;
-            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
-            {
-                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Ros
-                {
-                    my_2d_vec[i][j] = my_vec_y[counter];
-                    counter ++;
-                }
-            }*/
             resultValue =  my_vec_y;
         }
         return (resultValue);
@@ -192,19 +155,7 @@ namespace nimbus{
         {
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
-            //std::u16string wDecode = std::u16string(decode.begin(), decode.end());
             int16_t* my_vec_z = (int16_t*)decode.c_str();
-            /*std::vector<std::vector<int16_t> > my_2d_vec(286, std::vector<int16_t>(352, 0));
-            //std::cout << "Row size: " << my_2d_vec.size() << "Column size: " << my_2d_vec[0].size() << std::endl;
-            int counter = 0;
-            for (size_t j = 0; j < my_2d_vec[0].size(); j++)           //column
-            {
-                for(size_t i = 0; i <my_2d_vec.size() ; i++)        //Ros
-                {
-                    my_2d_vec[i][j] = my_vec_z[counter];
-                    counter ++;
-                }
-            }*/
             resultValue =  my_vec_z;
         }
         return (resultValue);
