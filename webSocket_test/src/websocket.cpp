@@ -13,7 +13,7 @@ namespace nimbus{
     WebSocketClient::WebSocketClient(unsigned char * addr, bool continuousTrig = false, 
                     double port = 8080, double jsonPort = 8383, 
                     int rcvTimeout = 3, int pingTimeout = 3, 
-                    int reconnectIntents = 3, double imgBufSize =10)
+                    int reconnectIntents = 3, double imgBufSize =10) 
     {
         this->_address = addr;
         this->_streamPort = port;
@@ -45,24 +45,13 @@ namespace nimbus{
         for(size_t i = 0; i < 286*352; i++) this->_uY[i] = unitY[i] / spread;
         for(size_t i = 0; i < 286*352; i++) this->_uZ[i] = unitZ[i] / spread;
 
+        //getImage = new NImage<float *>("NULL");
         this->connect();  
     }
 
     WebSocketClient::~WebSocketClient()
     {
         this->_listenThread.join();
-    }
-
-    /** ToDo:
-     * @brief This conversion is not followed by the books as in its counterpart in python
-     *  version, headerSize = struct.unpack("<ff", buf[:8])
-     * here we concentraten only on the first two element of the array and
-     * it is considered as the version and header size.
-     * @todo change this and follow the IEEE 754 -1985 industry standard.
-    */
-    float * WebSocketClient::unpack(std::string buf){
-        float_t * b = (float_t *) buf.c_str();
-        return (b);
     }
 
     void WebSocketClient::listenerThread()
@@ -81,6 +70,8 @@ namespace nimbus{
                     // current = std::string(current.begin(), current.begin()+8);
                     // float * value = this->unpack(current);
                     // std::cout << value[1] << std::endl;
+                    std::string current = this->_imageQueue.front();
+                    float * value = this->create(current);
                 }else{
                     this->_imageQueue.pop();
                 }
@@ -241,4 +232,83 @@ namespace nimbus{
         curl_global_cleanup();
         return (resultJson);
     }
+
+  
+
+    
+    float * WebSocketClient::unpack(std::string buf){
+        float * b = (float_t *) buf.c_str();
+        return (b);
+    }
+
+    /** Interpret the input from Web socket*/
+    
+    float * WebSocketClient::create(std::string buffer)
+    {
+        auto temp = std::string(buffer.begin(), buffer.begin() + 8);
+        float * Size = this->unpack(temp);
+        int headerSize = (int)Size[1];
+        temp = std::string(buffer.begin(), buffer.begin() + headerSize);
+        float * header = (float *)temp.c_str();
+        // for(int i = 0; i < 14; i++)
+        //     std::cout << "Header out at " << i << " is : " << header[i] << std::endl; 
+        int imgType = (int)header[HeaderImgType];
+        int width = (int)header[HeaderROIWidth];
+        int height = (int)header[HeaderROIHeight];
+        int numSeq = (int)header[HeaderNumSequences];
+
+        if(imgType == NimbusImageRaw)
+        {
+            /** @todo: 
+             * 1. decode the hole buffer into uint16_t array
+             * 2. arr = arr.reshape((numSeqs, height, width))
+            */
+        }else{ 
+            int imgSize = height * width * 2;
+            int confSize = height * width * 1;
+            int amplStart = headerSize;
+            int amplStop = amplStart + imgSize;
+            if (imgType & NimbusImageAmpl)
+            {
+                temp = std::string(buffer.begin()+amplStart, buffer.begin()+amplStop);  
+                uint16_t * ampl = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
+                // for(int i = 0; i < width * height; i++)
+                //     std::cout << "Amplitude out at " << i << " is : " << ampl[i] << std::endl; 
+            }else{
+                // ToDo
+            }
+            int radialStart = amplStop;
+            int radialStop = radialStart + imgSize;
+            if(imgType & NimbusImageDist)
+            {
+                temp = std::string(buffer.begin()+radialStart, buffer.begin()+radialStop);
+                uint16_t * radial = (uint16_t *)temp.c_str();                           //Reshape the array with Width and Height
+                // for(int i = 0; i < width * height; i++)
+                //     std::cout << "Radial out at " << i << " is : " << radial[i] << std::endl;
+            }else{
+                //ToDo
+            }
+            int confStart = radialStop;
+            int confStop = confStart + confSize;
+            if(imgType & NimbusImageConf)
+            {
+                temp = std::string(buffer.begin()+confStart, buffer.begin()+confStop);
+                uint8_t * conf = (uint8_t *)temp.c_str();                               //Reshape the array with Width and Height
+                // for(int i = 0; i < width * height; i++)
+                //     std::cout << "Conf out at " << i << " is : " << (int)conf[i] << std::endl;
+            }else{
+                //ToDo
+            }
+            int xStart = confStop;
+            int xStop = xStart + imgSize;
+            if(imgType & NimbusImageX)
+            {
+                temp = std::string(buffer.begin()+xStart, buffer.begin()+xStop);
+                int16_t * x = (int16_t *)temp.c_str();                               //Reshape the array with Width and Height
+                for(int i = 0; i < width * height; i++)
+                    std::cout << "X out at " << i << " is : " << x[i] << std::endl;
+            }
+        }
+    }
+
 }

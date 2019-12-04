@@ -41,3 +41,5 @@ webSocket_test/build_cmake/
 test/build/
 
 webSocket_test/cpr
+
+webSocket_test/.vscode/

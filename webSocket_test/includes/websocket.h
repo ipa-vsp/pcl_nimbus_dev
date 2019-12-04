@@ -33,10 +33,10 @@
 
 //namespace p = boost::python;
 //namespace np = boost::python::numpy;
-namespace nimbus {
-class WebSocketClient{
+namespace nimbus{
+class WebSocketClient {
     std::mutex m_mutex;
-private:
+protected:
     
     int NimbusImageRaw          = 1;
     int NimbusImageDist         = 2;
@@ -62,7 +62,7 @@ private:
     int ConfUnderExposured = 1;
     int ConfOverExposured  = 2;
     int ConfAsymmetric     = 3;
-
+private:
     unsigned char * _address, _streamURL;
     double _streamPort, _jsonPort, _UR;
     int _rcvTimeout, _pingTimeout, _reconnectIntents, _imgBufSize;
@@ -102,15 +102,24 @@ public:
     template<typename D>
     D getSpreadFactorXYZ();
 
-    inline float * unpack(std::string buf);
-
     void normalize(std::vector<std::vector<int16_t>> unit, std::vector<std::vector<float_t>> * _u);
     
     template<typename T, typename D>
     T _getJsonParameter(D data);
     static size_t WriteCallback(const char* in, std::size_t size, std::size_t num, std::string* out);
 
-     std::queue<std::string> _imageQueue;
+     /** ToDo:
+     * @brief This conversion is not followed by the books as in its counterpart in python
+     *  version, headerSize = struct.unpack("<ff", buf[:8])
+     * here we concentraten only on the first two element of the array and
+     * it is considered as the version and header size.
+     * @todo change this and follow the IEEE 754 -1985 industry standard.
+    */
+    inline float * unpack(std::string buffer);
+    float * create(std::string buf);
+
+    std::queue<std::string> _imageQueue;
+   
 };
 }
 
