@@ -37,13 +37,17 @@ namespace nimbus{
 
     struct ImageDecoded
     {
+        uint8_t * conf;
         uint16_t * apml;
         uint16_t * radial;
-        uint8_t * conf;
         int16_t * x;
         int16_t * y;
         int16_t * z;
         float * header;
+    };
+
+    struct rawPointsXYZ{
+        float * x, *y, *z, *amplitude;
     };
     
     class WebSocketClient {
@@ -81,6 +85,13 @@ namespace nimbus{
         bool _listenStarted;
         bool _listenEnded, _connected, _disconnectMe;
         std::thread _threadUpdate;
+        uint8_t * conf;
+        uint16_t * apml;
+        uint16_t * radial;
+        int16_t * x;
+        int16_t * y;
+        int16_t * z;
+        float * header;
 
         float_t spread;
         float * _uX = new float[286*352];
@@ -103,7 +114,7 @@ namespace nimbus{
         void _pollQueue();
         void connect();
         void disconnect();
-        void getImage();
+        rawPointsXYZ getImage();
 
         template<typename D>
         D getUnitVectorX();
@@ -129,7 +140,7 @@ namespace nimbus{
          * @todo change this and follow the IEEE 754 -1985 industry standard.
         */
         inline float * unpack(std::string buffer);
-        ImageDecoded create(std::string buf);
+        void create(std::string buf);
 
         std::queue<std::string> _imageQueue;
     

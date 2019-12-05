@@ -53,22 +53,62 @@ namespace nimbus{
         this->_listenThread.join();
     }
 
-    void WebSocketClient::getImage(){
+    rawPointsXYZ WebSocketClient::getImage(){
         //ToDo poll queue to get the data
+        rawPointsXYZ rpxyz;
         std::string current =this->_imageQueue.front();
         if(current != "")
+        {
+            this->create(current);
+            int imgType = this->header[HeaderImgType];
+            if (imgType == 70)
             {
-                ImageDecoded imgDec = this->create(current);
-                int imgType = imgDec.header[HeaderImgType];
                 if(imgType != NimbusImageRaw)
                 {
                     //double * ampl = (float64)imgDec.apml;
+                    //for(size_t i = 0; i < 286*352; i++) rpxyz.ampl[i] = (float)imgDec.apml[i];
                     float * radial = new float[286*352];
-                    for(size_t i =0; i < 286*352; i++) radial[i] = (float)imgDec.radial[i]/65535*this->_UR;
-                    for(size_t i =0; i < 286*352; i++)
-                        std::cout << "Radial value at: " << i << " is: " << radial[i] << std::endl;
+                    for(size_t i =0; i < 286*352; i++) radial[i] = (float)this->radial[i]/65535*this->_UR;
+                    //ToDo implement invalid as nan
+                    float * tempX = new float[286*352];
+                    float * tempY = new float[286*352];
+                    float * tempZ = new float[286*352]; 
+                    if(!(imgType & NimbusImageX))
+                    {
+                        for(size_t i = 0; i < 286*352; i++)
+                            tempX[i] = radial[i] * this->_uX[i];
+                        rpxyz.x = tempX;
+                    }
+                    if(!(imgType & NimbusImageY))
+                    {
+                        for(size_t i = 0; i < 286*352; i++)
+                            tempY[i] = radial[i] * this->_uY[i];
+                        rpxyz.y = tempY;
+                    }
+                    if(!(imgType & NimbusImageZ))
+                    {   
+                        for(size_t i = 0; i < 286*352; i++)
+                            tempZ[i] = radial[i] * this->_uZ[i];
+                        rpxyz.z = tempZ;
+                    }
+                    delete[] tempX, tempY, tempZ;
+                    std::vector<std::vector<float> > myVec;
+                    int counter = 0;
+                    for(size_t j = 0; j <286; j++)
+                    {
+                        std::vector<float> temp;
+                        for(size_t i = 0; i <352; i++)
+                        {
+                            temp.push_back(rpxyz.z[counter]);
+                            counter ++;
+                        }
+                        myVec.push_back(temp);
+                    }
+                    delete[] radial;
                 }
             }
+        }
+        return rpxyz;
 
     }
 
@@ -257,21 +297,21 @@ namespace nimbus{
 
     /** Interpret the input from Web socket*/
     
-    ImageDecoded WebSocketClient::create(std::string buffer)
+    void WebSocketClient::create(std::string buffer)
     {
         ImageDecoded imgDd;
-        auto temp = std::string(buffer.begin(), buffer.begin() + 8);
+        std::string temp = std::string(buffer.begin(), buffer.begin() + 8);
         float * Size = this->unpack(temp);
         int headerSize = (int)Size[1];
         temp = std::string(buffer.begin(), buffer.begin() + headerSize);
-        float * header = (float *)temp.c_str();
+        float * headers = (float *)temp.c_str();
         // for(int i = 0; i < 14; i++)
         //     std::cout << "Header out at " << i << " is : " << header[i] << std::endl; 
-        int imgType = (int)header[HeaderImgType];
-        int width = (int)header[HeaderROIWidth];
-        int height = (int)header[HeaderROIHeight];
-        int numSeq = (int)header[HeaderNumSequences];
-        imgDd.header = header;
+        int imgType = (int)headers[HeaderImgType];
+        int width = (int)headers[HeaderROIWidth];
+        int height = (int)headers[HeaderROIHeight];
+        int numSeq = (int)headers[HeaderNumSequences];
+        this->header = headers;
 
         if(imgType == NimbusImageRaw)
         {
@@ -287,9 +327,8 @@ namespace nimbus{
             if (imgType & NimbusImageAmpl)
             {
                 temp = std::string(buffer.begin()+amplStart, buffer.begin()+amplStop);  
-                imgDd.apml = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "Amplitude out at " << i << " is : " << ampl[i] << std::endl; 
+                uint16_t * apmlt = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
+                this->apml =  apmlt;
             }else{
                 // ToDo
             }
@@ -298,9 +337,8 @@ namespace nimbus{
             if(imgType & NimbusImageDist)
             {
                 temp = std::string(buffer.begin()+radialStart, buffer.begin()+radialStop);
-                imgDd.radial = (uint16_t *)temp.c_str();                           //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "Radial out at " << i << " is : " << radial[i] << std::endl;
+                uint16_t * radials = (uint16_t *)temp.c_str();                           //Reshape the array with Width and Height
+                this->radial = radials;
             }else{
                 //ToDo
             }
@@ -309,9 +347,8 @@ namespace nimbus{
             if(imgType & NimbusImageConf)
             {
                 temp = std::string(buffer.begin()+confStart, buffer.begin()+confStop);
-                imgDd.conf = (uint8_t *)temp.c_str();                               //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "Conf out at " << i << " is : " << (int)conf[i] << std::endl;
+                uint8_t * confd = (uint8_t *)temp.c_str();                               //Reshape the array with Width and Height
+                this->conf = confd;
             }else{
                 //ToDo
             }
@@ -353,7 +390,6 @@ namespace nimbus{
             }
 
         }
-        return imgDd;
     }
 
 }
