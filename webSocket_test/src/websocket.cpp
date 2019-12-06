@@ -36,9 +36,9 @@ namespace nimbus{
 
         // ..
         this->spread = this->getSpreadFactorXYZ<float_t>();
-        int16_t * unitX = this->getUnitVectorX<int16_t *>();
-        int16_t * unitY = this->getUnitVectorY<int16_t *>();
-        int16_t * unitZ = this->getUnitVectorY<int16_t *>();
+        std::vector<int16_t> unitX = this->getUnitVectorX<std::vector<int16_t>>();
+        std::vector<int16_t> unitY = this->getUnitVectorY<std::vector<int16_t>>();
+        std::vector<int16_t> unitZ = this->getUnitVectorY<std::vector<int16_t>>();
         
         // ToDo: Remove the tidious for loop!!
         for(size_t i = 0; i < 286*352; i++) this->_uX[i] = unitX[i] / spread;
@@ -146,7 +146,6 @@ namespace nimbus{
 
     }
 
-
     template<typename D>
     D WebSocketClient::getUnitVectorX(){
         D resultValue;
@@ -157,7 +156,10 @@ namespace nimbus{
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
             int16_t* my_vec_x = (int16_t*)decode.c_str();
-            resultValue =  my_vec_x;
+            std::vector<int16_t> temp;
+            for(int i = 0; i < 286*352; i++)
+                temp.push_back(my_vec_x[i]);
+            resultValue =  temp;
         }
         return (resultValue);
     }
@@ -171,7 +173,10 @@ namespace nimbus{
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
             int16_t* my_vec_y = (int16_t*)decode.c_str();
-            resultValue =  my_vec_y;
+            std::vector<int16_t> temp;
+            for(int i = 0; i < 286*352; i++)
+                temp.push_back(my_vec_y[i]);
+            resultValue =  temp;
         }
         return (resultValue);
     }
@@ -185,7 +190,10 @@ namespace nimbus{
             std::string data(result_r["result"].asString());
             std::string decode = base64_decode(data);
             int16_t* my_vec_z = (int16_t*)decode.c_str();
-            resultValue =  my_vec_z;
+            std::vector<int16_t> temp;
+            for(int i = 0; i < 286*352; i++)
+                temp.push_back(my_vec_z[i]);
+            resultValue =  temp;
         }
         return (resultValue);
     }

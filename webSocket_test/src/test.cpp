@@ -1,5 +1,10 @@
-#include "websocket.h"
+#include <pcl/common/common_headers.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
 
+#include "websocket.h"
 #include <time.h>
 
 int main(int argc, char** argv)
@@ -12,6 +17,23 @@ int main(int argc, char** argv)
     int count = 1;
     std::vector<std::vector<float>> res = a.getImage();
     //std::cout << raxyz.x[0] << std::endl;
+
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+    // //Fill the cloud data
+    // cloud->width = 352;
+    // cloud->height = 286;
+    // cloud->is_dense = false;
+    // cloud->points.resize(cloud->width * cloud->height);
+    // for (size_t i = 0; i < cloud->points.size(); i++)
+    // {
+    //     cloud->points[i].x = res[0][i];
+    //     cloud->points[i].y = res[1][i];
+    //     cloud->points[i].z = res[2][i];
+    // }
+    // pcl::visualization::CloudViewer viewer("Cloud Viewer");
+    // viewer.showCloud(cloud);
+
+    
     while (true){
         start = clock();
         res = a.getImage();

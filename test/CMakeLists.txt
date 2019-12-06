@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(test)
 
-find_package(PCL 1.9 REQUIRED COMPONENTS common io)
+find_package(PCL 1.9 REQUIRED COMPONENTS common io visualization)
 
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
