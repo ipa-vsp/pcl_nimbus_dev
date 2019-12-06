@@ -53,63 +53,47 @@ namespace nimbus{
         this->_listenThread.join();
     }
 
-    rawPointsXYZ WebSocketClient::getImage(){
+    std::vector<std::vector<float>> WebSocketClient::getImage(){
         //ToDo poll queue to get the data
-        rawPointsXYZ rpxyz;
+        std::vector<std::vector<float> > myVec;
         std::string current =this->_imageQueue.front();
+        while(current == "") current =this->_imageQueue.front();
         if(current != "")
         {
-            this->create(current);
-            int imgType = this->header[HeaderImgType];
-            if (imgType == 70)
+            ImageDecoded imgDecoded = this->create(current);
+            int imgType = imgDecoded.header[HeaderImgType];
+            if (imgType != 0)
             {
-                if(imgType != NimbusImageRaw)
+                imgType = 70;
+                // ToDo apmlitude
+                float * radial = new float[286*352];
+                for(size_t i =0; i < 286*352; i++) radial[i] = (float)imgDecoded.radial[i]/65535*this->_UR;
+                //ToDo implement invalid as nan with conf 
+                if(!(imgType & NimbusImageX))
                 {
-                    //double * ampl = (float64)imgDec.apml;
-                    //for(size_t i = 0; i < 286*352; i++) rpxyz.ampl[i] = (float)imgDec.apml[i];
-                    float * radial = new float[286*352];
-                    for(size_t i =0; i < 286*352; i++) radial[i] = (float)this->radial[i]/65535*this->_UR;
-                    //ToDo implement invalid as nan
-                    float * tempX = new float[286*352];
-                    float * tempY = new float[286*352];
-                    float * tempZ = new float[286*352]; 
-                    if(!(imgType & NimbusImageX))
-                    {
-                        for(size_t i = 0; i < 286*352; i++)
-                            tempX[i] = radial[i] * this->_uX[i];
-                        rpxyz.x = tempX;
-                    }
-                    if(!(imgType & NimbusImageY))
-                    {
-                        for(size_t i = 0; i < 286*352; i++)
-                            tempY[i] = radial[i] * this->_uY[i];
-                        rpxyz.y = tempY;
-                    }
-                    if(!(imgType & NimbusImageZ))
-                    {   
-                        for(size_t i = 0; i < 286*352; i++)
-                            tempZ[i] = radial[i] * this->_uZ[i];
-                        rpxyz.z = tempZ;
-                    }
-                    delete[] tempX, tempY, tempZ;
-                    std::vector<std::vector<float> > myVec;
-                    int counter = 0;
-                    for(size_t j = 0; j <286; j++)
-                    {
-                        std::vector<float> temp;
-                        for(size_t i = 0; i <352; i++)
-                        {
-                            temp.push_back(rpxyz.z[counter]);
-                            counter ++;
-                        }
-                        myVec.push_back(temp);
-                    }
-                    delete[] radial;
+                    std::vector<float> tempX;
+                    for(size_t i = 0; i < 286*352; i++)
+                        tempX.push_back(radial[i] * this->_uX[i]);
+                    myVec.push_back(tempX);
                 }
+                if(!(imgType & NimbusImageY))
+                {
+                    std::vector<float> tempY;
+                    for(size_t i = 0; i < 286*352; i++)
+                        tempY.push_back(radial[i] * this->_uY[i]);
+                    myVec.push_back(tempY);
+                }
+                if(!(imgType & NimbusImageZ))
+                {   
+                    std::vector<float> tempZ;
+                    for(size_t i = 0; i < 286*352; i++)
+                        tempZ.push_back(radial[i] * this->_uZ[i]);
+                    myVec.push_back(tempZ);
+                }
+                delete[] radial;
             }
         }
-        return rpxyz;
-
+        return myVec;
     }
 
     void WebSocketClient::listenerThread()
@@ -297,21 +281,18 @@ namespace nimbus{
 
     /** Interpret the input from Web socket*/
     
-    void WebSocketClient::create(std::string buffer)
+    ImageDecoded WebSocketClient::create(std::string buffer)
     {
-        ImageDecoded imgDd;
+        ImageDecoded imgDecoded;
         std::string temp = std::string(buffer.begin(), buffer.begin() + 8);
         float * Size = this->unpack(temp);
         int headerSize = (int)Size[1];
         temp = std::string(buffer.begin(), buffer.begin() + headerSize);
         float * headers = (float *)temp.c_str();
-        // for(int i = 0; i < 14; i++)
-        //     std::cout << "Header out at " << i << " is : " << header[i] << std::endl; 
         int imgType = (int)headers[HeaderImgType];
         int width = (int)headers[HeaderROIWidth];
         int height = (int)headers[HeaderROIHeight];
         int numSeq = (int)headers[HeaderNumSequences];
-        this->header = headers;
 
         if(imgType == NimbusImageRaw)
         {
@@ -319,77 +300,75 @@ namespace nimbus{
              * 1. decode the hole buffer into uint16_t array
              * 2. arr = arr.reshape((numSeqs, height, width))
             */
-        }else{ 
+        }else{
             int imgSize = height * width * 2;
             int confSize = height * width * 1;
             int amplStart = headerSize;
             int amplStop = amplStart + imgSize;
             if (imgType & NimbusImageAmpl)
             {
-                temp = std::string(buffer.begin()+amplStart, buffer.begin()+amplStop);  
-                uint16_t * apmlt = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
-                this->apml =  apmlt;
-            }else{
-                // ToDo
+                temp = std::string(buffer.begin()+amplStart, buffer.begin()+amplStop);
+                uint16_t * amplt = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
+                int count = 0;
+                for(int i = 0; i< height; i++)                  //ROW
+                {
+                    std::vector<float> vecTemp;
+                    for(int j = 0; j < width; j++)              //COLUMN
+                    {
+                        vecTemp.push_back((float)amplt[count]);
+                        count ++;
+                    }
+                    this->amplitude.push_back(vecTemp);
+                }
             }
+            else{} // ToDo 
             int radialStart = amplStop;
             int radialStop = radialStart + imgSize;
             if(imgType & NimbusImageDist)
             {
                 temp = std::string(buffer.begin()+radialStart, buffer.begin()+radialStop);
                 uint16_t * radials = (uint16_t *)temp.c_str();                           //Reshape the array with Width and Height
-                this->radial = radials;
-            }else{
-                //ToDo
+                imgDecoded.radial = radials;
+                
             }
+            else{} //ToDo
             int confStart = radialStop;
             int confStop = confStart + confSize;
             if(imgType & NimbusImageConf)
             {
                 temp = std::string(buffer.begin()+confStart, buffer.begin()+confStop);
-                uint8_t * confd = (uint8_t *)temp.c_str();                               //Reshape the array with Width and Height
-                this->conf = confd;
-            }else{
-                //ToDo
+                uint8_t * conf = (uint8_t *)temp.c_str();                                   //Reshape the array with Width and Height
+                // for(int i = 0; i<286*352; i++)
+                // {
+                //     std::cout <<"Confidence at: " << i << " is: " << (int)conf[i] << std::endl;
+                // }
+                    
             }
-
+            else{} //ToDo
             int xStart = confStop;
             int xStop = xStart + imgSize;
-            if(imgType & NimbusImageX)
-            {
+            if(imgType & NimbusImageX){
                 temp = std::string(buffer.begin()+xStart, buffer.begin()+xStop);
-                imgDd.x = (int16_t *)temp.c_str();                               //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "X out at " << i << " is : " << x[i] << std::endl;
-            }else{
-                //ToDo
+                int16_t * xD = (int16_t *)temp.c_str();                                       //Reshape the array with Width and Height
             }
-
+            else {}//ToDo
             int yStart = confStop;
             int yStop = yStart + imgSize;
-            if(imgType & NimbusImageX)
-            {
+            if(imgType & NimbusImageY){
                 temp = std::string(buffer.begin()+yStart, buffer.begin()+yStop);
-                imgDd.y = (int16_t *)temp.c_str();                               //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "X out at " << i << " is : " << y[i] << std::endl;
-            }else{
-                //ToDo
+                int16_t * yD = (int16_t *)temp.c_str();                                       //Reshape the array with Width and Height
             }
-
+            else{} //ToDo
             int zStart = confStop;
             int zStop = zStart + imgSize;
-            if(imgType & NimbusImageX)
-            {
+            if(imgType & NimbusImageZ){
                 temp = std::string(buffer.begin()+zStart, buffer.begin()+zStop);
-                imgDd.z = (int16_t *)temp.c_str();                               //Reshape the array with Width and Height
-                // for(int i = 0; i < width * height; i++)
-                //     std::cout << "X out at " << i << " is : " << z[i] << std::endl;
-            }else{
-                //ToDo
+                int16_t * zD = (int16_t *)temp.c_str();                                       //Reshape the array with Width and Height
             }
-
+            else{} //ToDo
         }
+        imgDecoded.header = headers;
+        return imgDecoded;
     }
 
 }
