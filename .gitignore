@@ -43,3 +43,5 @@ test/build/
 webSocket_test/cpr
 
 webSocket_test/.vscode/
+
+visualization_test/build/

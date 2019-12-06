@@ -44,7 +44,7 @@ namespace nimbus{
         for(size_t i = 0; i < 286*352; i++) this->_uX[i] = unitX[i] / spread;
         for(size_t i = 0; i < 286*352; i++) this->_uY[i] = unitY[i] / spread;
         for(size_t i = 0; i < 286*352; i++) this->_uZ[i] = unitZ[i] / spread;
-
+        this->_imageQueue.push("");
         this->connect();  
     }
 
