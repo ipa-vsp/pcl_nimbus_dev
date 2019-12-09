@@ -240,7 +240,7 @@ main (int argc, char** argv)
     simple = true;
     std::cout << "Simple visualisation example\n";
   }
-  else if (true)
+  else if (false)
   {
     custom_c = true;
     std::cout << "Custom colour visualisation example\n";
