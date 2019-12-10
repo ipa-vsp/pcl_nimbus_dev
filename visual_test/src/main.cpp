@@ -12,12 +12,13 @@
 
 int user_data;
 
+
 pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
 {
     pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
     viewer->setBackgroundColor(0,0,0);
-    viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
-    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+    viewer->addPointCloud<pcl::PointXYZ>(cloud, "cloud");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
     viewer->addCoordinateSystem(1.0);
     viewer->initCameraParameters();
     return(viewer);
@@ -47,7 +48,8 @@ int main(int argc, char** argv)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     // pcl::io::loadPCDFile("ism_test_cat.pcd", *cloud);
-    pcl::visualization::CloudViewer viewer("Simple cloud viewer");
+    // pcl::visualization::CloudViewer viewer("Simple cloud viewer");
+    pcl::visualization::PCLVisualizer::Ptr viewer;
     nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
 
     cloud->width = 352 * 286;
@@ -65,29 +67,35 @@ int main(int argc, char** argv)
         cloud->points.push_back(basic_points);
     }
 
-    std::cout << "Size of the cloud is: " << cloud->points.size() << std::endl;
-
-    viewer.showCloud(cloud);
-    pcl::io::savePCDFileASCII ("test_pcd_my.pcd", *cloud);
-    viewer.runOnVisualizationThreadOnce(viewerOneOff);
-    viewer.runOnVisualizationThread(viewPsycho);
-
-    while (!viewer.wasStopped())
+    // viewer.showCloud(cloud);
+    // viewer.runOnVisualizationThreadOnce(viewerOneOff);
+    // viewer.runOnVisualizationThread(viewPsycho);
+    viewer = simpleVis(cloud);
+    //delete[] cloud.get();
+    while (!viewer->wasStopped())
     {
         user_data ++;
-        // res = wbClient.getImage();
-        // if(!res.empty()){
-        //     for(int i = 0; i < res[0].size(); i++)
-        //     {
-        //         pcl::PointXYZ basic_points;
-        //         basic_points.x = res[0][i];
-        //         basic_points.y = res[1][i];
-        //         basic_points.z = res[2][i];
-        //         cloud->points.push_back(basic_points);
-        //     }
-        //     viewer.
-        //     viewer.showCloud(cloud);
-        // }
+        pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        res = wbClient.getImage();
+        if(!res.empty()){
+            for(int i = 0; i < res[0].size(); i++)
+            {
+                pcl::PointXYZ basic_points;
+                basic_points.x = res[0][i];
+                basic_points.y = res[1][i];
+                basic_points.z = res[2][i];
+                new_cloud->points.push_back(basic_points);
+            }
+
+            if(!viewer->updatePointCloud(new_cloud, "cloud"))
+                viewer->addPointCloud(new_cloud, "cloud");
+        }else{
+            if(!viewer->updatePointCloud(cloud, "cloud"))
+                viewer->addPointCloud(cloud, "cloud");
+        }
+        //delete[] new_cloud.get();
+        cloud = new_cloud;
+        viewer->spinOnce();
     }
     return 0;
 }
