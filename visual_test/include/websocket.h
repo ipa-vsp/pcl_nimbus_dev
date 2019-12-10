@@ -91,9 +91,12 @@ namespace nimbus{
         // int numSeq;
        
         float_t spread;
-        float * _uX = new float[286*352];
-        float * _uY = new float[286*352];
-        float * _uZ = new float[286*352];
+        // float * _uX = new float[286*352];
+        // float * _uY = new float[286*352];
+        // float * _uZ = new float[286*352];
+        std::vector<float> _uX;
+        std::vector<float> _uY;
+        std::vector<float> _uZ;
 
         std::thread _listenThread;
         websocket_endpoint endpoint;
@@ -140,6 +143,9 @@ namespace nimbus{
         ImageDecoded create(std::string buf);
 
         std::vector<std::vector<float>> amplitude;
+        std::vector<int> confidence;
+        int imgType;
+        uint8_t * confid;
         rawPointsXYZ rpxyz;
     
     };
