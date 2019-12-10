@@ -41,9 +41,9 @@ namespace nimbus{
         std::vector<int16_t> unitZ = this->getUnitVectorZ<std::vector<int16_t>>();
         
         // ToDo: Remove the tidious for loop!!
-        for(size_t i = 0; i < 286*352; i++) this->_uX[i] = unitX[i] / spread;
-        for(size_t i = 0; i < 286*352; i++) this->_uY[i] = unitY[i] / spread;
-        for(size_t i = 0; i < 286*352; i++) this->_uZ[i] = unitZ[i] / spread;
+        for(size_t i = 0; i < 286*352; i++) this->_uX.push_back(unitX[i] / spread);
+        for(size_t i = 0; i < 286*352; i++) this->_uY.push_back(unitY[i] / spread);
+        for(size_t i = 0; i < 286*352; i++) this->_uZ.push_back(unitZ[i] / spread);
         this->_imageQueue.push("");
         this->connect();  
     }
@@ -65,13 +65,18 @@ namespace nimbus{
             this->_queueFront = this->_imageQueue.front();
             ImageDecoded imgDecoded = this->create(_queueFront);
             int imgType = imgDecoded.header[HeaderImgType];
-            if (imgType != 0)
+            if (this->imgType != 0)
             {
                 imgType = 70;
                 // ToDo apmlitude
-                float * radial = new float[286*352];
-                for(size_t i =0; i < 286*352; i++) radial[i] = (float)imgDecoded.radial[i]/65535*this->_UR;
-                //ToDo implement invalid as nan with conf 
+                std::vector<float> radial;
+                for(size_t i =0; i < 286*352; i++) radial.push_back((float)imgDecoded.radial[i]/65535*this->_UR);
+                // for(size_t i =0; i < 286*352; i++)
+                // {
+                //     int tempC = this->confidence[i];
+                //     if(tempC == 1)
+                //         radial.at(i) = 0;
+                // }
                 if(!(imgType & NimbusImageX))
                 {
                     std::vector<float> tempX;
@@ -93,7 +98,7 @@ namespace nimbus{
                         tempZ.push_back(radial[i] * this->_uZ[i]);
                     myVec.push_back(tempZ);
                 }
-                delete[] radial;
+                // delete[] radial;
             }
         }
         return myVec;
@@ -304,7 +309,7 @@ namespace nimbus{
         int headerSize = (int)Size[1];
         temp = std::string(buffer.begin(), buffer.begin() + headerSize);
         float * headers = (float *)temp.c_str();
-        int imgType = (int)headers[HeaderImgType];
+        this->imgType = (int)headers[HeaderImgType];
         int width = (int)headers[HeaderROIWidth];
         int height = (int)headers[HeaderROIHeight];
         int numSeq = (int)headers[HeaderNumSequences];
@@ -353,10 +358,12 @@ namespace nimbus{
             {
                 temp = std::string(buffer.begin()+confStart, buffer.begin()+confStop);
                 uint8_t * conf = (uint8_t *)temp.c_str();                                   //Reshape the array with Width and Height
-                // for(int i = 0; i<286*352; i++)
-                // {
-                //     std::cout <<"Confidence at: " << i << " is: " << (int)conf[i] << std::endl;
-                // }
+                //this->confid = conf;
+                for(int i = 0; i<286*352; i++)
+                {
+                    //std::cout <<"Confidence at: " << i << " is: " << (int)this->confid[i] << std::endl;
+                    this->confidence.push_back((int)conf[i]);
+                }
                     
             }
             else{} //ToDo
@@ -387,3 +394,4 @@ namespace nimbus{
     }
 
 }
+
