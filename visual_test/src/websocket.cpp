@@ -56,11 +56,14 @@ namespace nimbus{
     std::vector<std::vector<float>> WebSocketClient::getImage(){
         //ToDo poll queue to get the data
         std::vector<std::vector<float> > myVec;
-        std::string current =this->_imageQueue.front();
-        while(current == "") current =this->_imageQueue.front();
-        if(current != "")
+        while((this->_connected == false) || (_queueFront == "")){
+            if(!this->_imageQueue.empty()) 
+                this->_queueFront = this->_imageQueue.front();  // Wait for to estblish the connection
+        }
+        if((this->_connected != false) && (_queueFront != ""))
         {
-            ImageDecoded imgDecoded = this->create(current);
+            this->_queueFront = this->_imageQueue.front();
+            ImageDecoded imgDecoded = this->create(_queueFront);
             int imgType = imgDecoded.header[HeaderImgType];
             if (imgType != 0)
             {
@@ -107,16 +110,20 @@ namespace nimbus{
             if (status == "Open")
             {
                 if(this->_imageQueue.size() <= this->_imgBufSize){
+                    this->_connected = true;
                     this->_imageQueue.push(metadata.get()->_queue);
                 }else{
                     while(!(this->_imageQueue.size() <= this->_imgBufSize))
                         this->_imageQueue.pop();
                     this->_imageQueue.push(metadata.get()->_queue);
+                    this->_connected = true;
                 }
             }else if(status == "Connecting")
             {
+                this->_connected = false;
                 std::cout << "Connecting to the Web Socket Please wait:...!" << std::endl;
             }else if(status == "Failed"){
+                this->_connected = false;
                 std::cout << "Failed to connect .. Trying to reconnect again" << std::endl;
                 intent +=1;
                 //ToDo without exiting this thread this->connect();

@@ -9,6 +9,7 @@
 #include <mutex>
 #include <thread>
 #include <queue>
+#include <deque>
 #include <stdlib.h>
 #include <stdio.h>
 #include <bits/stdc++.h> 
@@ -81,6 +82,8 @@ namespace nimbus{
         bool _listenEnded, _connected, _disconnectMe;
         std::thread _threadUpdate;
 
+        //std::deque<std::string> _imgDeque(10);
+        std::string _queueFront = "";
         std::queue<std::string> _imageQueue;
         // int imgType;
         // int width;

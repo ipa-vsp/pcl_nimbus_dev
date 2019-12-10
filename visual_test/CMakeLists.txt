@@ -26,7 +26,7 @@ add_definitions(${PCL_DEFINITIONS})
 add_library(base64 "src/base64.cpp")
 target_link_libraries(base64)
 add_library(WebSocketClient "src/websocket.cpp")
-target_link_libraries(WebSocketClient base64 ${CURL_LIBRARIES} ${WEBSOCKETPP_LIBRARIES} ${JSONCPP_LIBRARIES})
+target_link_libraries(WebSocketClient base64 jsoncpp ${CURL_LIBRARIES} ${WEBSOCKETPP_LIBRARIES})
 
 #-------- Executables ------------
 add_executable(main src/main.cpp)

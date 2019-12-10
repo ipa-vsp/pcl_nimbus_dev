@@ -49,3 +49,7 @@ visualization_test/build/
 visualization_examples/build/
 
 visual_test/build/
+
+visualization_examples/.vscode/
+
+visual_test/.vscode/
