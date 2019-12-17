@@ -72,10 +72,16 @@ int main(int argc, char** argv)
         basic_points.rgb = *reinterpret_cast<float*>(&rgb);
         cloud->points.push_back(basic_points);
     }
-    // viewer = simpleVis(cloud, "3D Cloud");
-
+    // http://pointclouds.org/documentation/tutorials/how_features_work.php#rusudissertation
+    std::vector<int> indices(std::floor(cloud->points.size()/10));
+    for(size_t i = 0; i < indices.size(); ++i) indices[i] = i;
+    
     pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
     ne.setInputCloud(cloud);
+
+    boost::shared_ptr<std::vector<int> > indicesptr(new std::vector<int>(indices));
+    //ne.setIndices (indicesptr);
+
     pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>());
     ne.setSearchMethod(tree);
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
