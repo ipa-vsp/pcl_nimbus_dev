@@ -3,6 +3,7 @@
 
 #include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -76,7 +77,7 @@ int main(int argc, char** argv)
     std::vector<int> indices(std::floor(cloud->points.size()/10));
     for(size_t i = 0; i < indices.size(); ++i) indices[i] = i;
     
-    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
+    pcl::NormalEstimationOMP<pcl::PointXYZRGB, pcl::Normal> ne;
     ne.setInputCloud(cloud);
 
     boost::shared_ptr<std::vector<int> > indicesptr(new std::vector<int>(indices));

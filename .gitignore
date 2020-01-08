@@ -57,3 +57,5 @@ visual_test/.vscode/
 normal estimation/.vscode/
 
 normal estimation/build/
+
+socket_test/build/
