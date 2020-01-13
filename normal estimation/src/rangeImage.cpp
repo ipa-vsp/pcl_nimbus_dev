@@ -6,19 +6,19 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/range_image_visualizer.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/console/parse.h>
 #include <pcl/conversions.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/statistical_outlier_removal.h>
 
-#include <pcl/point_types.h>
-#include <pcl/features/normal_3d.h>
-
+#include <pcl/range_image/range_image.h>
 #include "websocket.h"
 
 int user_data;
-
+float angular_resoulution_x = 0.5f, 
+        angular_resoulution_y = angular_resoulution_x;
+pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
+bool live_update = false;
 
 pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, std::string viewerName)
 {
@@ -51,14 +51,18 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 
 int main(int argc, char** argv)
 {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    Eigen::Affine3f scene_senor_pose (Eigen::Affine3f::Identity());
     pcl::visualization::PCLVisualizer::Ptr viewer;
     nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
     pcl::PointCloud<pcl::Normal>::Ptr cloud_nor(new pcl::PointCloud<pcl::Normal>);
 
-    cloud->width = 352 * 286;
-    cloud->height = 1;
-    cloud->is_dense = true;
+    angular_resoulution_x = pcl::deg2rad(angular_resoulution_x);
+    angular_resoulution_y = pcl::deg2rad(angular_resoulution_y);
+
+    cloud_ptr->width = 352 * 286;
+    cloud_ptr->height = 1;
+    cloud_ptr->is_dense = true;
     std::vector<std::vector<float>> res(3, std::vector<float>(286*352, 0));
     res = wbClient.getImage();
     
@@ -68,43 +72,14 @@ int main(int argc, char** argv)
         basic_points.x = res[0][i];
         basic_points.y = res[1][i];
         basic_points.z = res[2][i];
-        cloud->points.push_back(basic_points);
+        cloud_ptr->points.push_back(basic_points);
     }
-    // http://pointclouds.org/documentation/tutorials/how_features_work.php#rusudissertation
-    pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
-    ne.setInputCloud(cloud);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
-    ne.setSearchMethod(tree);
-    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-    ne.setRadiusSearch(0.05);
-    ne.compute(*cloud_normals);
+    pcl::PointCloud<pcl::PointXYZ>& cloud = *cloud_ptr;
 
-    viewer = normalsVis(cloud, cloud_normals);
-
-    while (!viewer->wasStopped())
-    {
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr newCloud(new pcl::PointCloud<pcl::PointXYZ>);
-        // std::vector<std::vector<float>> resl(3, std::vector<float>(286*352, 0));
-        // resl = wbClient.getImage();
-        // if(!resl.empty())
-        // {
-        //     for(int i = 0; i < resl[0].size(); i++)
-        //     {
-        //         pcl::PointXYZ loadPoints;
-        //         loadPoints.x = resl[0][i];
-        //         loadPoints.y = resl[1][i];
-        //         loadPoints.z = resl[2][i];
-        //         newCloud->points.push_back(loadPoints);
-        //     }
-        //     ne.setInputCloud(newCloud);
-        //     ne.compute(*cloud_normals);
-        //     if(!viewer->updatePointCloud(newCloud,  "sample cloud"))
-        //     {
-        //         viewer->addPointCloud(newCloud, "sample cloud");
-        //         viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(newCloud, cloud_normals, 10, 0.05, "normals");
-        //     }
-        // }        
-        viewer->spinOnce();
-    }
+    scene_senor_pose = Eigen::Affine3f(Eigen::Translation3f(cloud.sensor_origin_[0],
+                                                            cloud.sensor_origin_[1],
+                                                            cloud.sensor_origin_[2])) *
+                        Eigen::Affine3f(cloud.sensor_orientation_);
+    // TODo :-) http://pointclouds.org/documentation/tutorials/range_image_visualization.php#range-image-visualization
     return 0;
 }
