@@ -14,6 +14,10 @@
 
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/uniform_sampling.h>
+
+#include <pcl/features/shot_omp.h>
+#include <pcl/features/board.h>
 
 #include "websocket.h"
 
@@ -52,9 +56,12 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 int main(int argc, char** argv)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cyl(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::io::loadPCDFile("cylinder.pcd", *cloud_cyl);
     pcl::visualization::PCLVisualizer::Ptr viewer;
     nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
-    pcl::PointCloud<pcl::Normal>::Ptr cloud_nor(new pcl::PointCloud<pcl::Normal>);
+
+
 
     cloud->width = 352 * 286;
     cloud->height = 1;
@@ -70,40 +77,57 @@ int main(int argc, char** argv)
         basic_points.z = res[2][i];
         cloud->points.push_back(basic_points);
     }
+
+    /** Compute Normals */
     // http://pointclouds.org/documentation/tutorials/how_features_work.php#rusudissertation
     pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
-    ne.setInputCloud(cloud);
+    ne.setInputCloud(cloud_cyl);
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
     ne.setSearchMethod(tree);
-    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-    ne.setRadiusSearch(0.05);
-    ne.compute(*cloud_normals);
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_cyl(new pcl::PointCloud<pcl::Normal>);
+    ne.setRadiusSearch(0.1);
+    ne.compute(*cloud_normals_cyl);
 
-    viewer = normalsVis(cloud, cloud_normals);
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normal(new pcl::PointCloud<pcl::Normal>);
+    ne.setInputCloud(cloud);
+    ne.compute(*cloud_normal);
+
+    /** Downsample cloud to extract Key Points (Filters) */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_keypoints (new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cyl_keypoints (new pcl::PointCloud<pcl::PointXYZ>());
+
+    pcl::UniformSampling<pcl::PointXYZ> uniform_sampling;
+    uniform_sampling.setInputCloud(cloud);
+    uniform_sampling.setRadiusSearch(0.03f);
+    uniform_sampling.filter(*cloud_keypoints);
+    std::cout << "Scense total points: " << cloud->size () << "; Selected Keypoints: " << cloud_keypoints->size () << std::endl;
+
+    uniform_sampling.setInputCloud(cloud_cyl);
+    uniform_sampling.setRadiusSearch(0.01f);
+    uniform_sampling.filter(*cloud_cyl_keypoints);
+    std::cout << "Model total points: " << cloud_cyl->size () << "; Selected Keypoints: " << cloud_cyl_keypoints->size () << std::endl;
+
+    /** Compute descriptor for keypoints */
+    pcl::PointCloud<pcl::SHOT352>::Ptr cloud_descriptor (new pcl::PointCloud<pcl::SHOT352>());
+    pcl::PointCloud<pcl::SHOT352>::Ptr cloud_cyl_descriptor (new pcl::PointCloud<pcl::SHOT352>());
+    pcl::SHOTColorEstimation<pcl::PointXYZ, pcl::Normal, pcl::SHOT352> descriptor_estimation;
+    descriptor_estimation.setRadiusSearch(0.02f);
+
+    descriptor_estimation.setInputCloud(cloud_keypoints);
+    descriptor_estimation.setInputNormals(cloud_normal);
+    descriptor_estimation.setSearchSurface(cloud);
+    descriptor_estimation.compute(*cloud_descriptor);
+
+    descriptor_estimation.setInputCloud(cloud_cyl_keypoints);
+    descriptor_estimation.setInputNormals(cloud_normals_cyl);
+    descriptor_estimation.setSearchSurface(cloud_cyl);
+    descriptor_estimation.compute(*cloud_cyl_descriptor);
+
+    viewer = normalsVis(cloud, cloud_normal);
 
     while (!viewer->wasStopped())
     {
-        // pcl::PointCloud<pcl::PointXYZ>::Ptr newCloud(new pcl::PointCloud<pcl::PointXYZ>);
-        // std::vector<std::vector<float>> resl(3, std::vector<float>(286*352, 0));
-        // resl = wbClient.getImage();
-        // if(!resl.empty())
-        // {
-        //     for(int i = 0; i < resl[0].size(); i++)
-        //     {
-        //         pcl::PointXYZ loadPoints;
-        //         loadPoints.x = resl[0][i];
-        //         loadPoints.y = resl[1][i];
-        //         loadPoints.z = resl[2][i];
-        //         newCloud->points.push_back(loadPoints);
-        //     }
-        //     ne.setInputCloud(newCloud);
-        //     ne.compute(*cloud_normals);
-        //     if(!viewer->updatePointCloud(newCloud,  "sample cloud"))
-        //     {
-        //         viewer->addPointCloud(newCloud, "sample cloud");
-        //         viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(newCloud, cloud_normals, 10, 0.05, "normals");
-        //     }
-        // }        
+               
         viewer->spinOnce();
     }
     return 0;

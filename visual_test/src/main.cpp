@@ -47,25 +47,12 @@ void viewPsycho(pcl::visualization::PCLVisualizer& viewer)
 int main(int argc, char** argv)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    // pcl::io::loadPCDFile("ism_test_cat.pcd", *cloud);
+    pcl::io::loadPCDFile("cylinder.pcd", *cloud);
     // pcl::visualization::CloudViewer viewer("Simple cloud viewer");
     pcl::visualization::PCLVisualizer::Ptr viewer;
-    nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
+    //nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
 
-    cloud->width = 352 * 286;
-    cloud->height = 1;
-    cloud->is_dense = true;
-    std::vector<std::vector<float>> res(3, std::vector<float>(286*352, 0));
-    res = wbClient.getImage();
-
-    for(int i = 0; i < res[0].size(); i++)
-    {
-        pcl::PointXYZ basic_points;
-        basic_points.x = res[0][i];
-        basic_points.y = res[1][i];
-        basic_points.z = res[2][i];
-        cloud->points.push_back(basic_points);
-    }
+    
 
     // viewer.showCloud(cloud);
     // viewer.runOnVisualizationThreadOnce(viewerOneOff);
@@ -75,26 +62,7 @@ int main(int argc, char** argv)
     while (!viewer->wasStopped())
     {
         user_data ++;
-        pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        res = wbClient.getImage();
-        if(!res.empty()){
-            for(int i = 0; i < res[0].size(); i++)
-            {
-                pcl::PointXYZ basic_points;
-                basic_points.x = res[0][i];
-                basic_points.y = res[1][i];
-                basic_points.z = res[2][i];
-                new_cloud->points.push_back(basic_points);
-            }
-
-            if(!viewer->updatePointCloud(new_cloud, "cloud"))
-                viewer->addPointCloud(new_cloud, "cloud");
-        }else{
-            if(!viewer->updatePointCloud(cloud, "cloud"))
-                viewer->addPointCloud(cloud, "cloud");
-        }
-        //delete[] new_cloud.get();
-        cloud = new_cloud;
+       
         viewer->spinOnce();
     }
     return 0;
