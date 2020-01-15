@@ -13,7 +13,7 @@ else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-find_package(PCL 1.9 REQUIRED COMPONENTS common io visualization features)
+find_package(PCL 1.9 REQUIRED)
 find_package(websocketpp REQUIRED)
 find_package(CURL REQUIRED)
 find_package(jsoncpp REQUIRED)

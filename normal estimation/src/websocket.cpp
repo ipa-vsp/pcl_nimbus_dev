@@ -74,7 +74,7 @@ namespace nimbus{
                 for(int i = 0; i < 286*352; i++)
                 {
                     int tempC = this->confidence[i];
-                    if(tempC == 1) radialO[i] = 0;
+                    if(tempC == 1) radialO[i] = NAN;          // Change to NaN
                 }
                 //ToDo implement invalid as nan with conf 
                 if(!(imgType & NimbusImageX))

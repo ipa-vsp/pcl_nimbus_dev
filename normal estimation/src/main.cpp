@@ -31,6 +31,9 @@
 
 int user_data;
 typedef pcl::SHOT352 DescriptorType;
+typedef pcl::PointXYZ PointType;
+typedef pcl::Normal NormalType;
+typedef pcl::ReferenceFrame RFType;
 
 pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, std::string viewerName)
 {
@@ -83,8 +86,9 @@ int main(int argc, char** argv)
         basic_points.x = res[0][i];
         basic_points.y = res[1][i];
         basic_points.z = res[2][i];
-        cloud->points.push_back(basic_points);
+        //cloud->points.push_back(basic_points);
     }
+    pcl::io::loadPCDFile("cloud.pcd", *cloud);
 
     /** Compute Normals */
     // http://pointclouds.org/documentation/tutorials/how_features_work.php#rusudissertation
@@ -93,7 +97,7 @@ int main(int argc, char** argv)
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
     ne.setSearchMethod(tree);
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_cyl(new pcl::PointCloud<pcl::Normal>());
-    ne.setRadiusSearch(0.3f);
+    ne.setRadiusSearch(0.03f);
     ne.compute(*cloud_normals_cyl);
 
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normal(new pcl::PointCloud<pcl::Normal>());
@@ -169,36 +173,37 @@ int main(int argc, char** argv)
 
     /** Using Hough3d*/
     // Compute (keypoints) reference frame only for Hough
-    pcl::PointCloud<pcl::ReferenceFrame>::Ptr model_rf (new pcl::PointCloud<pcl::ReferenceFrame>());
-    pcl::PointCloud<pcl::ReferenceFrame>::Ptr scene_rf (new pcl::PointCloud<pcl::ReferenceFrame>());
+    pcl::PointCloud<RFType>::Ptr model_rf (new pcl::PointCloud<RFType> ());
+    pcl::PointCloud<RFType>::Ptr scene_rf (new pcl::PointCloud<RFType> ());
 
-    pcl::BOARDLocalReferenceFrameEstimation<pcl::PointXYZ, pcl::Normal, pcl::ReferenceFrame> rf_est;
-    rf_est.setFindHoles(true);
-    rf_est.setRadiusSearch(0.015f);
-    rf_est.setInputCloud(cloud_keypoints);
-    rf_est.setInputNormals(cloud_normal);
-    rf_est.setSearchSurface(cloud);
-    rf_est.compute(*model_rf);
+    pcl::BOARDLocalReferenceFrameEstimation<PointType, NormalType, RFType> rf_est;
+    rf_est.setFindHoles (true);
+    rf_est.setRadiusSearch (0.015f);
 
-    rf_est.setInputCloud(cloud_cyl_keypoints);
-    rf_est.setInputNormals(cloud_normals_cyl);
-    rf_est.setSearchSurface(cloud_cyl);
-    rf_est.compute(*scene_rf);
+    rf_est.setInputCloud (cloud_keypoints);
+    rf_est.setInputNormals (cloud_normal);
+    rf_est.setSearchSurface (cloud);
+    rf_est.compute (*model_rf);
 
-    // Clustering
-    pcl::Hough3DGrouping<pcl::PointXYZ, pcl::PointXYZ, pcl::ReferenceFrame, pcl::ReferenceFrame> clusterer;
-    clusterer.setHoughBinSize(0.01f);
-    clusterer.setHoughThreshold(5.0f);
-    clusterer.setUseInterpolation(true);
-    clusterer.setUseDistanceWeight(false);
+    rf_est.setInputCloud (cloud_cyl_keypoints);
+    rf_est.setInputNormals (cloud_normals_cyl);
+    rf_est.setSearchSurface (cloud_cyl);
+    rf_est.compute (*scene_rf);
 
-    clusterer.setInputCloud(cloud_keypoints);
-    clusterer.setInputRf(model_rf);
-    clusterer.setSceneCloud(cloud_cyl_keypoints);
-    clusterer.setSceneRf(scene_rf);
-    clusterer.setModelSceneCorrespondences(model_scene_corrs);
-    //clusterer.cluster(clustered_corrs);
-    clusterer.recognize(rototranslations, clustered_corrs);
+    //  Clustering
+    pcl::Hough3DGrouping<PointType, PointType, RFType, RFType> clusterer;
+    clusterer.setHoughBinSize (0.01f);
+    clusterer.setHoughThreshold (5.0f);
+    clusterer.setUseInterpolation (true);
+    clusterer.setUseDistanceWeight (false);
+
+    clusterer.setInputCloud (cloud_keypoints);
+    clusterer.setInputRf (model_rf);
+    clusterer.setSceneCloud (cloud_cyl_keypoints);
+    clusterer.setSceneRf (scene_rf);
+    clusterer.setModelSceneCorrespondences (model_scene_corrs);
+    //clusterer.cluster (clustered_corrs);
+    clusterer.recognize (rototranslations, clustered_corrs);
 
     //
     //  Output results
