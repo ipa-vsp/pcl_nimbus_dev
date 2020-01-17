@@ -66,9 +66,9 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 
 int main(int argc, char** argv)
 {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr model(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::io::loadPCDFile("cylinder.pcd", *model);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::PointCloud<pcl::PointXYZ>::Ptr model(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::io::loadPCDFile("scaledCube.pcd", *model);
     // pcl::visualization::PCLVisualizer::Ptr viewer;
     nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
 
@@ -92,9 +92,9 @@ int main(int argc, char** argv)
     // scene->sensor_origin_[0] = 0;
     // scene->sensor_origin_[1] = 0;
     // scene->sensor_origin_[2] = 6;
-    // model->sensor_origin_[0] = 0;
-    // model->sensor_origin_[1] = 1;
-    // model->sensor_origin_[2] = 4; 
+    model->sensor_origin_[0] = 0;
+    model->sensor_origin_[1] = 0;
+    model->sensor_origin_[2] = 1; 
 
     /** Statistical outline remover */
     pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
@@ -115,12 +115,13 @@ int main(int argc, char** argv)
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
     pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>());
     pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>());
-    ne.setRadiusSearch(0.03f);
+    ne.setRadiusSearch(0.01f);
     ne.setSearchMethod(tree);
 
     ne.setInputCloud(model);
     ne.compute(*model_normals);
 
+    ne.setRadiusSearch(0.01f);
     ne.setInputCloud(scene);
     ne.compute(*scene_normals);
 
@@ -142,7 +143,7 @@ int main(int argc, char** argv)
 
     pcl::UniformSampling<pcl::PointXYZ> uniform_sampling;
     uniform_sampling.setInputCloud(model);
-    uniform_sampling.setRadiusSearch(0.05f);
+    uniform_sampling.setRadiusSearch(0.01f);
     uniform_sampling.filter(*model_keypoints);
     std::cout << "Model total points: " << model->size () << "; Selected Keypoints: " << model_keypoints->size () << std::endl;
 
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
     pcl::PointCloud<pcl::SHOT352>::Ptr scene_descriptor (new pcl::PointCloud<pcl::SHOT352>());
     pcl::PointCloud<pcl::SHOT352>::Ptr model_descriptor (new pcl::PointCloud<pcl::SHOT352>());
     pcl::SHOTEstimationOMP<pcl::PointXYZ, pcl::Normal, pcl::SHOT352> descriptor_estimation;
-    descriptor_estimation.setRadiusSearch(0.03f);
+    descriptor_estimation.setRadiusSearch(0.01f);
 
     descriptor_estimation.setInputCloud(model_keypoints);
     descriptor_estimation.setInputNormals(model_normals);
