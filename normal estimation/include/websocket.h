@@ -75,8 +75,8 @@ namespace nimbus{
         int ConfOverExposured  = 2;
         int ConfAsymmetric     = 3;
     private:
-        unsigned char * _address, _streamURL;
-        double _streamPort, _jsonPort, _UR;
+        std::string _address, _streamURL, _jsonURL;
+        int _streamPort, _jsonPort, _UR;
         int _rcvTimeout, _pingTimeout, _reconnectIntents, _imgBufSize;
         bool _listenStarted;
         bool _listenEnded, _connected, _disconnectMe;
@@ -100,10 +100,12 @@ namespace nimbus{
         connection_metadata::ptr metadata;
         //ImageDecoded _imageDecoded;
 
+        int web_id;
+        int web_close = websocketpp::close::status::normal;
+
     public:
-        WebSocketClient(unsigned char * _addr, bool continuousTrig, 
-                        double port, double jsonPort, 
-                        int rcvTimeout, int pingTimeout, 
+        WebSocketClient(const std::string _addr, bool continuousTrig, 
+                        double port, double jsonPort,  
                         int reconnectIntents, double imgBufSize);
         ~WebSocketClient();
         //void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg);

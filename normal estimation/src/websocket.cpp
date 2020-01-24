@@ -1,4 +1,4 @@
-#include "websocket.h"
+#include <websocket.h>
 
 #include <websocketpp/common/thread.hpp>
 #include <websocketpp/common/memory.hpp>
@@ -10,18 +10,14 @@
 #include <sstream>
 
 namespace nimbus{
-    WebSocketClient::WebSocketClient(unsigned char * addr, bool continuousTrig = false, 
-                    double port = 8080, double jsonPort = 8383, 
-                    int rcvTimeout = 3, int pingTimeout = 3, 
-                    int reconnectIntents = 3, double imgBufSize =10) 
+    WebSocketClient::WebSocketClient(const std::string addr, bool continuousTrig, 
+                    double port, double jsonPort,
+                    int reconnectIntents, double imgBufSize) 
     {
         this->_address = addr;
         this->_streamPort = port;
-        // this->_streamURL = "ws://%s:%d/stream", addr, port;
         this->_jsonPort = jsonPort;
 
-        this->_rcvTimeout = rcvTimeout;
-        this->_pingTimeout = pingTimeout;
         this->_reconnectIntents = reconnectIntents;
 
         this->_imgBufSize = imgBufSize;
@@ -50,6 +46,7 @@ namespace nimbus{
 
     WebSocketClient::~WebSocketClient()
     {
+        this->endpoint.close(web_id, web_close, "close");
         this->_listenThread.join();
     }
 
@@ -68,13 +65,13 @@ namespace nimbus{
             if (this->imagType != 0)
             {
                 imgType = 70;
-                // ToDo apmlitude
+                // ToDo amplitude
                 std::vector<float> radialO;
                 for(size_t i =0; i < 286*352; i++) radialO.push_back((float)this->radials[i]/65535*this->_UR);
                 for(int i = 0; i < 286*352; i++)
                 {
                     int tempC = this->confidence[i];
-                    if(tempC == 1) radialO[i] = NAN;          // Change to NaN
+                    if(tempC == 1) radialO[i] = NAN;
                 }
                 //ToDo implement invalid as nan with conf 
                 if(!(imgType & NimbusImageX))
@@ -139,12 +136,14 @@ namespace nimbus{
 
     void WebSocketClient::connect()
     {
-        int id = endpoint.connect("ws://192.168.0.69:8080/stream");
-        metadata = endpoint.get_metadata(id);
+        _streamURL = "ws://" + _address + ":" + std::to_string(_streamPort) + "/stream";
+        std::cout << "Web socket stream address: " << _streamURL.c_str() << std::endl;
+        this->web_id = endpoint.connect(_streamURL.c_str());
+        metadata = endpoint.get_metadata(this->web_id);
         if (metadata) {
             std::cout << metadata.get() << std::endl;
         } else {
-            std::cout << "> Unknown connection id " << id << std::endl;
+            std::cout << "> Unknown connection id " << web_id << std::endl;
         }
 
         try
@@ -238,7 +237,9 @@ namespace nimbus{
         struct curl_slist *headers = NULL;
         CURLcode res;
         std::string readBuffer;
-        unsigned char * url = this->_address;       //ToDo Change this to string
+        _jsonURL = "http://" + _address + ":" + std::to_string(_jsonPort) + "/jsonrpc";
+        std::cout << "JSON RPC stream address: " << _jsonURL.c_str() << std::endl;
+        unsigned char * url = (unsigned char *)_jsonURL.c_str();       //ToDo Change this to string
         long httpCode(0);
         std::unique_ptr<std::string> httpData(new std::string());
         const std::string result_string;

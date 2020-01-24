@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     pcl::PointCloud<pcl::PointXYZ>::Ptr model(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::io::loadPCDFile("scaledCube.pcd", *model);
     // pcl::visualization::PCLVisualizer::Ptr viewer;
-    nimbus::WebSocketClient wbClient((unsigned char *)"http://192.168.0.69:8383/jsonrpc", false, 8080, 8383, 3, 5, 3, 10);
+    nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
 
 
 
