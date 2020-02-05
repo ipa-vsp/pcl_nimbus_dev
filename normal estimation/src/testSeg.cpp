@@ -45,6 +45,62 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 }
 
 
+/** Mean Filter
+ * @brief Perform the arithmetic mean of valid points
+ * @param blob Point cloud frames
+ * @param numFrame number of frames for mean validation of points
+ * @return resulted frame
+ * Delete the oldest point cloud
+*/
+void meanFilter(std::queue<std::vector<std::vector<float>>> blob, int numFrame, std::vector<std::vector<float>> * res){
+    // Seperate the x, y, z;
+    std::vector<std::vector<float>> buf; 
+    int meanDivider = blob.size();
+    std::vector<float> addX(286*352, 0);
+    std::vector<float> addY(286*352, 0);
+    std::vector<float> addZ(286*352, 0);
+    std::vector<float> conf(286*352, 0);
+    std::vector<float> meanCounter(286*352, 0);
+    if(meanDivider <= numFrame){
+        while(!blob.empty()){
+            buf = blob.front();
+            blob.pop();
+            for(int i = 0; i < buf[0].size(); i++){
+                if(isnan(buf[0][i]) || isnan(buf[1][i]) || isnan(buf[2][i]))
+                    conf[i] = 1;
+                else{
+                    addX[i] += buf[0][i];
+                    addY[i] += buf[1][i];
+                    addZ[i] += buf[2][i];
+                    meanCounter[i] += 1;
+                }
+            }
+        }
+        int confCounter = 0;
+        for(int i = 0; i < conf.size(); i++){
+            if(meanCounter[i] <= 1){
+                addX[i] = NAN;
+                addY[i] = NAN;
+                addZ[i] = NAN;
+                confCounter ++;
+            }else{
+                addX[i] = addX[i] / meanCounter[i];
+                addY[i] = addY[i] / meanCounter[i];
+                addZ[i] = addZ[i] / meanCounter[i];
+            }
+        }
+        std::cout << "Confidence Matrix element counter: " << confCounter << std::endl;
+        res->push_back(addX);
+        res->push_back(addY);
+        res->push_back(addZ);
+       
+    }else{
+        return;
+    }
+
+}
+
+
 int main(int argc, char** argv)
 {
     nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
@@ -52,21 +108,37 @@ int main(int argc, char** argv)
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>), cloud_p(new pcl::PointCloud<pcl::PointXYZ>), cloud_f(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>);
 
-    // scene->width = 352 * 286;
-    // scene->height = 1;
-    // scene->is_dense = true;
-    // std::vector<std::vector<float>> res(3, std::vector<float>(286*352, 0));
-    // res = wbClient.getImage();
-    
-    // for(int i = 0; i < res[0].size(); i++)
-    // {
-    //     pcl::PointXYZ basic_points;
-    //     basic_points.x = res[0][i];
-    //     basic_points.y = res[1][i];
-    //     basic_points.z = res[2][i];
-    //     scene->points.push_back(basic_points);
-    // }
-    pcl::io::loadPCDFile("kinect_cloud.pcd", *scene);
+    scene->width = 352 * 286;
+    scene->height = 1;
+    scene->is_dense = true;
+    std::vector<std::vector<float>> res; //(3, std::vector<float>(286*352, 0));
+    std::queue<std::vector<std::vector<float>>> blob;
+    int numFrame = 0;
+    while (numFrame < 500){
+        res = wbClient.getImage();
+        if(!res.empty()){
+            blob.push(res);
+            numFrame ++;
+        }else{
+            std::cout << "Empty frame" << std::endl; 
+        }
+    }
+
+    std::vector<std::vector<float>> resFil;
+    meanFilter(blob, 500, &resFil);
+    for(int i = 0; i < res[0].size(); i++)
+    {
+        pcl::PointXYZ basic_points;
+        basic_points.x = resFil[0][i];
+        basic_points.y = resFil[1][i];
+        basic_points.z = resFil[2][i];
+        scene->points.push_back(basic_points);
+    }
+
+   
+    std::cerr << "Point Cloud after filtering: " << scene->width * scene->height << " data Points" << std::endl;
+
+    // pcl::io::loadPCDFile("kinect_cloud.pcd", *scene);
 
     pcl::toPCLPointCloud2<pcl::PointXYZ>(*scene, *cloud_blob);
 
@@ -134,7 +206,7 @@ int main(int argc, char** argv)
     while(!viewer->wasStopped() & !viewer_filtered->wasStopped() & !viewer_p->wasStopped() & !viewer_f->wasStopped()){
         viewer->spinOnce();
         viewer_filtered->spinOnce();
-        viewer_p->spinOnce();
-        viewer_f->spinOnce();
+        //viewer_p->spinOnce();
+        //viewer_f->spinOnce();
     }
 }
