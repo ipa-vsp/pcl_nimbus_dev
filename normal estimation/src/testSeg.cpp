@@ -16,11 +16,11 @@
 #include "websocket.h"
 
 
-pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, std::string viewerName)
+pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZI>::ConstPtr cloud, std::string viewerName)
 {
     pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer(viewerName.c_str()));
     viewer->setBackgroundColor(0,0,0);
-    viewer->addPointCloud<pcl::PointXYZ>(cloud, "cloud");
+    viewer->addPointCloud<pcl::PointXYZI>(cloud, "cloud");
     viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
     viewer->addCoordinateSystem(0.005);
     viewer->initCameraParameters();
@@ -59,6 +59,7 @@ void meanFilter(std::queue<std::vector<std::vector<float>>> blob, int numFrame, 
     std::vector<float> addX(286*352, 0);
     std::vector<float> addY(286*352, 0);
     std::vector<float> addZ(286*352, 0);
+    std::vector<float> addA(286*352, 0);
     std::vector<float> conf(286*352, 0);
     std::vector<float> meanCounter(286*352, 0);
     if(meanDivider <= numFrame){
@@ -66,12 +67,13 @@ void meanFilter(std::queue<std::vector<std::vector<float>>> blob, int numFrame, 
             buf = blob.front();
             blob.pop();
             for(int i = 0; i < buf[0].size(); i++){
-                if(isnan(buf[0][i]) || isnan(buf[1][i]) || isnan(buf[2][i]))
+                if(isnan(buf[0][i]) || isnan(buf[1][i]) || isnan(buf[2][i]) || isnan(buf[3][i]))
                     conf[i] = 1;
                 else{
                     addX[i] += buf[0][i];
                     addY[i] += buf[1][i];
                     addZ[i] += buf[2][i];
+                    addA[i] += buf[3][i];
                     meanCounter[i] += 1;
                 }
             }
@@ -87,13 +89,14 @@ void meanFilter(std::queue<std::vector<std::vector<float>>> blob, int numFrame, 
                 addX[i] = addX[i] / meanCounter[i];
                 addY[i] = addY[i] / meanCounter[i];
                 addZ[i] = addZ[i] / meanCounter[i];
+                addA[i] = addA[i] / meanCounter[i];
             }
         }
         std::cout << "Confidence Matrix element counter: " << confCounter << std::endl;
         res->push_back(addX);
         res->push_back(addY);
         res->push_back(addZ);
-       
+        res->push_back(addA);
     }else{
         return;
     }
@@ -105,8 +108,8 @@ int main(int argc, char** argv)
 {
     nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
     pcl::PCLPointCloud2::Ptr cloud_blob (new pcl::PCLPointCloud2), cloud_filtered_blob (new pcl::PCLPointCloud2);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>), cloud_p(new pcl::PointCloud<pcl::PointXYZ>), cloud_f(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>), cloud_p(new pcl::PointCloud<pcl::PointXYZI>), cloud_f(new pcl::PointCloud<pcl::PointXYZI>);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr scene(new pcl::PointCloud<pcl::PointXYZI>);
 
     scene->width = 352 * 286;
     scene->height = 1;
@@ -128,10 +131,11 @@ int main(int argc, char** argv)
     meanFilter(blob, 500, &resFil);
     for(int i = 0; i < res[0].size(); i++)
     {
-        pcl::PointXYZ basic_points;
+        pcl::PointXYZI basic_points;
         basic_points.x = resFil[0][i];
         basic_points.y = resFil[1][i];
         basic_points.z = resFil[2][i];
+        basic_points.intensity = resFil[3][i];
         scene->points.push_back(basic_points);
     }
 
@@ -140,14 +144,14 @@ int main(int argc, char** argv)
 
     // pcl::io::loadPCDFile("kinect_cloud.pcd", *scene);
 
-    pcl::toPCLPointCloud2<pcl::PointXYZ>(*scene, *cloud_blob);
+    pcl::toPCLPointCloud2<pcl::PointXYZI>(*scene, *cloud_blob);
 
     std::cerr << "Point Cloud before filtering: " << cloud_blob->width * cloud_blob->height << " data Points" << std::endl;
 
-    // Create the filtering object : down sampling the dataset using the leaf size 1cm
+    // Create the filtering object : down sampling the dataset using the leaf size 1mm
     pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
     sor.setInputCloud(cloud_blob);
-    sor.setLeafSize(0.01f, 0.01f, 0.01f);
+    sor.setLeafSize(0.001f, 0.001f, 0.001f);
     sor.filter(*cloud_filtered_blob);
 
     // Conver to the templated point cloud
@@ -162,7 +166,7 @@ int main(int argc, char** argv)
     pcl::ModelCoefficients::Ptr coefficient(new pcl::ModelCoefficients());
     pcl::PointIndices::Ptr Inliner (new pcl::PointIndices());
     // Create segmented object
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    pcl::SACSegmentation<pcl::PointXYZI> seg;
     //Optional
     seg.setOptimizeCoefficients(true);
     // Mandatory
@@ -172,8 +176,8 @@ int main(int argc, char** argv)
     seg.setDistanceThreshold (0.01);
 
     // Create the filtering object
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_fil = cloud_filtered;
+    pcl::ExtractIndices<pcl::PointXYZI> extract;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_fil = cloud_filtered;
 
     int i = 0, nr_point = (int) cloud_filtered->points.size();
     while(cloud_filtered->points.size() > 0.3 * nr_point){

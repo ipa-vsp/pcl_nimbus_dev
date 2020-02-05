@@ -49,7 +49,10 @@ namespace nimbus{
         this->endpoint.close(web_id, web_close, "close");
         this->_listenThread.join();
     }
-
+    /** @todo 
+     * Correct the this->imageType decode
+     * Remove the vectors
+    */
     std::vector<std::vector<float>> WebSocketClient::getImage(){
         //ToDo poll queue to get the data
         std::vector<std::vector<float> > myVec;
@@ -94,6 +97,13 @@ namespace nimbus{
                     for(size_t i = 0; i < 286*352; i++)
                         tempZ.push_back(radialO[i] * this->_uZ[i]);
                     myVec.push_back(tempZ);
+                }
+                if(!(false))
+                {   
+                    std::vector<float> amplt;
+                    for(size_t i = 0; i < 286*352; i++)
+                        amplt.push_back((float)this->amplitude[i]);
+                    myVec.push_back(amplt);
                 }
                 //delete[] radial;
             }
@@ -331,16 +341,8 @@ namespace nimbus{
                 temp = std::string(buffer.begin()+amplStart, buffer.begin()+amplStop);
                 uint16_t * amplt = (uint16_t *)temp.c_str();                             //Reshape the array with Width and Height
                 int count = 0;
-                for(int i = 0; i< height; i++)                  //ROW
-                {
-                    std::vector<float> vecTemp;
-                    for(int j = 0; j < width; j++)              //COLUMN
-                    {
-                        vecTemp.push_back((float)amplt[count]);
-                        count ++;
-                    }
-                    this->amplitude.push_back(vecTemp);
-                }
+                while(!this->amplitude.empty()) this->amplitude.pop_back();
+                for(int i = 0; i < width * height; i++) this->amplitude.push_back(amplt[i]);
             }
             else{} // ToDo 
             int radialStart = amplStop;

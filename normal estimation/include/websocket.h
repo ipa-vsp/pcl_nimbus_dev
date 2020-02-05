@@ -141,7 +141,7 @@ namespace nimbus{
         inline float * unpack(std::string buffer);
         ImageDecoded create(std::string buf);
 
-        std::vector<std::vector<float>> amplitude;
+        std::vector<uint16_t> amplitude;
         std::vector<int> confidence;
         std::vector<uint16_t> radials;
         int imagType;
