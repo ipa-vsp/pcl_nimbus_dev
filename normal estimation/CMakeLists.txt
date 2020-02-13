@@ -33,7 +33,7 @@ add_executable(main src/main.cpp)
 target_link_libraries(main WebSocketClient ${PCL_LIBRARIES})
 
 add_executable(testing src/testing.cpp)
-target_link_libraries(testing ${PCL_LIBRARIES})
+target_link_libraries(testing WebSocketClient ${PCL_LIBRARIES})
 
 add_executable(testSeg src/testSeg.cpp)
 target_link_libraries(testSeg WebSocketClient ${PCL_LIBRARIES})

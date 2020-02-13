@@ -12,58 +12,88 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
+#include "websocket.h"
 
-pcl::visualization::PCLVisualizer::Ptr normalsVis (
-    pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
+
+pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZI>::ConstPtr cloud, std::string viewerName)
 {
-  // --------------------------------------------------------
-  // -----Open 3D viewer and add point cloud and normals-----
-  // --------------------------------------------------------
-  pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-  viewer->setBackgroundColor (0, 0, 0);
-  //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(cloud);
-  viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-  viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
-  viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, normals, 10, 0.05, "normals");
-  viewer->addCoordinateSystem (1.0);
-  viewer->initCameraParameters ();
-  return (viewer);
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer(viewerName.c_str()));
+    viewer->setBackgroundColor(0,0,0);
+    viewer->addPointCloud<pcl::PointXYZI>(cloud, "cloud");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
+    viewer->addCoordinateSystem(0.05);
+    viewer->initCameraParameters();
+    return(viewer);
+}
+
+/** @brief Remove the present of the cloud 
+ * @param res Input blob point from nimbus camera
+ * @param persent Persentage between 0.0 to 1.0 
+ * @return edited cloud of default type pcl::PointXYZI
+ * Currently only pcl::PointXYZI will work
+*/
+template <typename T >
+void editCloud(std::vector<std::vector<float>> res, float persent, pcl::PointCloud<T> &edited){
+    int height = 286;   // Row
+    int width = 352;    // Column
+    int hLower = (height * persent)/2;
+    int hUpper = height - hLower;
+    int wLower = (width * persent)/2;
+    int wUpper = width - wLower;  
+    std::vector<std::vector<float>> pointX;
+    std::vector<std::vector<float>> pointY;
+    std::vector<std::vector<float>> pointZ;
+    std::vector<std::vector<float>> ampl;
+    int counter = 0;
+    for(int i = 0; i < height ; i++){
+        std::vector<float> tempX;
+        std::vector<float> tempY;
+        std::vector<float> tempZ;
+        std::vector<float> amplt;
+        for(int j = 0; j < width; j++){
+            if((i > hLower & i < hUpper) & (j > wLower & j < wUpper)){
+                tempX.push_back(res[0][counter]);
+                tempY.push_back(res[1][counter]);
+                tempZ.push_back(res[2][counter]);
+                amplt.push_back(res[3][counter]);
+                counter ++;
+            }else{
+                counter ++;
+            }
+        }
+        if(i > hLower & i < hUpper){
+            pointX.push_back(tempX);
+            pointY.push_back(tempY);
+            pointZ.push_back(tempZ);
+            ampl.push_back(amplt);
+        }
+    }
+    counter = 0;
+    for(int i = 0; i < pointX.size() ; i++){
+        for(int j = 0; j < pointX[0].size(); j++){
+            pcl::PointXYZI temp;
+            temp.x = pointX[i][j];
+            temp.y = pointY[i][j];
+            temp.z = pointZ[i][j];
+            temp.intensity = ampl[i][j];
+            edited.points.push_back(temp);
+            counter++;
+        }
+    }
 }
 
 
 int main(int argc, char** argv)
 {
     pcl::visualization::PCLVisualizer::Ptr viewer;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr model(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::io::loadPCDFile("cube.pcd", *model);
-
-    model->sensor_origin_[0] = 0;
-    model->sensor_origin_[1] = 0;
-    model->sensor_origin_[2] = 1;
-    //model->sensor_origin_[3] = 10;
-    for(int i = 0; i < model->size(); i++){
-        model->points[i].x = model->points[i].x / 100;
-        model->points[i].y = model->points[i].y / 100;
-        model->points[i].z = model->points[i].z / 100;
-        if (i >= 7489){
-            model->points[i].x = NAN;
-            model->points[i].y = NAN;
-            model->points[i].z = NAN;   
-        }
-    }
-
-    /** Compute Normals */
-    // http://pointclouds.org/documentation/tutorials/how_features_work.php#rusudissertation
-    pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
-    pcl::PointCloud<pcl::Normal>::Ptr model_normals(new pcl::PointCloud<pcl::Normal>());
-    ne.setRadiusSearch(0.5f);
-    ne.setSearchMethod(tree);
-    ne.setInputCloud(model);
-    ne.compute(*model_normals);
-    std::cout << "Size of normal cloud:" << model_normals->size() << std::endl;
-    viewer = normalsVis(model, model_normals);
-    pcl::io::savePCDFile("scaledCube.pcd", *model);
+    // pcl::io::loadPCDFile("cube.pcd", *model);
+    nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr scene(new pcl::PointCloud<pcl::PointXYZI>);
+    std::vector<std::vector<float>> res;
+    res = wbClient.getImage();
+    editCloud<pcl::PointXYZI>(res, 0.7, *scene);
+    viewer = simpleVis(scene, "Cloud Blob");
+    // pcl::io::savePCDFile("cloudEdit.pcd", *scene);
     while (!viewer->wasStopped())
     {
         viewer->spinOnce();
