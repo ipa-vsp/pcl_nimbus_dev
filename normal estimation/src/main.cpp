@@ -68,33 +68,31 @@ int main(int argc, char** argv)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr scene(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::PointCloud<pcl::PointXYZ>::Ptr model(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::io::loadPCDFile("scaledCube.pcd", *model);
+    pcl::io::loadPCDFile("milk.pcd", *model);
     // pcl::visualization::PCLVisualizer::Ptr viewer;
-    nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
-
-
+    // nimbus::WebSocketClient wbClient("192.168.0.69", false, 8080, 8383, 3, 10);
 
     scene->width = 352 * 286;
     scene->height = 1;
     scene->is_dense = true;
     std::vector<std::vector<float>> res(3, std::vector<float>(286*352, 0));
-    res = wbClient.getImage();
+    //res = wbClient.getImage();
     
-    for(int i = 0; i < res[0].size(); i++)
-    {
-        pcl::PointXYZ basic_points;
-        basic_points.x = res[0][i];
-        basic_points.y = res[1][i];
-        basic_points.z = res[2][i];
-        scene->points.push_back(basic_points);
-    }
-    // pcl::io::loadPCDFile("milk_cartoon_all_small_clorox.pcd", *scene);
+    // for(int i = 0; i < res[0].size(); i++)
+    // {
+    //     pcl::PointXYZ basic_points;
+    //     basic_points.x = res[0][i];
+    //     basic_points.y = res[1][i];
+    //     basic_points.z = res[2][i];
+    //     scene->points.push_back(basic_points);
+    // }
+    pcl::io::loadPCDFile("milk_cartoon_all_small_clorox.pcd", *scene);
     // scene->sensor_origin_[0] = 0;
     // scene->sensor_origin_[1] = 0;
     // scene->sensor_origin_[2] = 6;
-    model->sensor_origin_[0] = 0;
-    model->sensor_origin_[1] = 0;
-    model->sensor_origin_[2] = 1; 
+    // model->sensor_origin_[0] = 0;
+    // model->sensor_origin_[1] = 0;
+    // model->sensor_origin_[2] = 1; 
 
     /** Statistical outline remover */
     pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
@@ -152,7 +150,7 @@ int main(int argc, char** argv)
     uniform_sampling.filter(*scene_keypoints);
     std::cout << "Scene total points: " << scene->size () << "; Selected Keypoints: " << scene_keypoints->size () << std::endl;
 
-    /** Compute descriptor for keypoints (Registration) */
+    /** Compute descriptor for keypoints (Features) */
     pcl::PointCloud<pcl::SHOT352>::Ptr scene_descriptor (new pcl::PointCloud<pcl::SHOT352>());
     pcl::PointCloud<pcl::SHOT352>::Ptr model_descriptor (new pcl::PointCloud<pcl::SHOT352>());
     pcl::SHOTEstimationOMP<pcl::PointXYZ, pcl::Normal, pcl::SHOT352> descriptor_estimation;
@@ -168,7 +166,7 @@ int main(int argc, char** argv)
     descriptor_estimation.setSearchSurface(scene);
     descriptor_estimation.compute(*scene_descriptor);
 
-    /** Find Model-Scene Correspondence with kd-tree*/
+    /** Find Model-Scene Correspondence with kd-tree (Registration)*/
     pcl::CorrespondencesPtr model_scene_corrs (new pcl::Correspondences ());
     pcl::KdTreeFLANN<DescriptorType> match_search;
     match_search.setInputCloud(model_descriptor);
@@ -193,7 +191,7 @@ int main(int argc, char** argv)
     std::vector<pcl::Correspondences> clustered_corrs;
 
     /** Using Hough3d*/
-    // Compute (keypoints) reference frame only for Hough
+    // Compute (Feature) reference frame only for Hough
     pcl::PointCloud<RFType>::Ptr model_rf (new pcl::PointCloud<RFType> ());
     pcl::PointCloud<RFType>::Ptr scene_rf (new pcl::PointCloud<RFType> ());
 

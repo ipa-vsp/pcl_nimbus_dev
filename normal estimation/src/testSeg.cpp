@@ -100,7 +100,6 @@ void meanFilter(std::queue<std::vector<std::vector<float>>> blob, int numFrame, 
     }else{
         return;
     }
-
 }
 
 
